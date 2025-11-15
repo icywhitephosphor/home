@@ -1,0 +1,42 @@
+---
+- name: Ensure dnsmasq.d directory exists
+  ansible.builtin.file:
+    path: /tmp/dnsmasq.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Upload domain lists
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: /tmp/dnsmasq.d/{{ item }}
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  loop:
+    - copilot.lst
+    - datadog.lst
+    - figma.lst
+    - google.lst
+    - instagram.lst
+    - netflix.lst
+    - telegram.lst
+  notify:
+    - rebuild_domains
+    - refresh_firewall
+    - restart_firewall
+
+- name: Deploy getdomains script from template (backup existing)
+  ansible.builtin.template:
+    src: getdomains.sh.j2
+    dest: /etc/init.d/getdomains
+    owner: root
+    group: root
+    mode: "0755"
+    backup: true
+  notify:
+    - rebuild_domains
+    - refresh_firewall
+    - restart_firewall

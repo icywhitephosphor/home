@@ -1,0 +1,9 @@
+---
+# Toggle which domain lists are appended into the final domains.lst
+domains_copilot: true
+domains_figma: true
+domains_google: true
+domains_instagram: true
+domains_netflix: true
+domains_telegram: false
+domains_datadog: true

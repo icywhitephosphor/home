@@ -1,0 +1,63 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+start () {
+    DOMAINS=https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-nfset.lst
+    count=0
+    while true; do
+        if curl -m 3 github.com; then
+            curl -f $DOMAINS --output /tmp/dnsmasq.d/domains.lst
+            break
+        else
+            echo "GitHub is not available. Check the internet availability [$count]"
+            count=$((count+1))
+        fi
+    done
+    sed -i '/kinovod/d' /tmp/dnsmasq.d/domains.lst
+
+    # Добавляем локальные файлы
+{% if domains_google %}
+    [ -f /tmp/dnsmasq.d/google.lst ] && cat /tmp/dnsmasq.d/google.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # google list disabled by domains_google=false
+{% endif %}
+{% if domains_telegram %}
+    [ -f /tmp/dnsmasq.d/telegram.lst ] && cat /tmp/dnsmasq.d/telegram.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # telegram list disabled by domains_telegram=false
+{% endif %}
+{% if domains_instagram %}
+    [ -f /tmp/dnsmasq.d/instagram.lst ] && cat /tmp/dnsmasq.d/instagram.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # instagram list disabled by domains_instagram=false
+{% endif %}
+{% if domains_netflix %}
+    [ -f /tmp/dnsmasq.d/netflix.lst ] && cat /tmp/dnsmasq.d/netflix.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # netflix list disabled by domains_netflix=false
+{% endif %}
+{% if domains_copilot %}
+    [ -f /tmp/dnsmasq.d/copilot.lst ] && cat /tmp/dnsmasq.d/copilot.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # copilot list disabled by domains_copilot=false
+{% endif %}
+{% if domains_datadog %}
+    [ -f /tmp/dnsmasq.d/datadog.lst ] && cat /tmp/dnsmasq.d/datadog.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # datadog list disabled by domains_datadog=false
+{% endif %}
+{% if domains_figma %}
+    [ -f /tmp/dnsmasq.d/figma.lst ] && cat /tmp/dnsmasq.d/figma.lst >> /tmp/dnsmasq.d/domains.lst
+{% else %}
+    # figma list disabled by domains_figma=false
+{% endif %}
+
+    # Удаляем дубликаты
+    sort /tmp/dnsmasq.d/domains.lst | uniq > /tmp/dnsmasq.d/domains.lst.tmp
+    mv /tmp/dnsmasq.d/domains.lst.tmp /tmp/dnsmasq.d/domains.lst
+    # Проверяем синтаксис и перезапускаем dnsmasq
+    if dnsmasq --conf-file=/tmp/dnsmasq.d/domains.lst --test 2>&1 | grep -q "syntax check OK"; then
+        /etc/init.d/dnsmasq restart
+    fi
+}

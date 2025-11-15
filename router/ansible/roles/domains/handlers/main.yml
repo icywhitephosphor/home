@@ -1,0 +1,17 @@
+---
+- name: rebuild_domains
+  ansible.builtin.command:
+    cmd: sh /etc/init.d/getdomains start
+  # On OpenWrt getdomains usually restarts dnsmasq; ignore non-zero if device-specific
+  ignore_errors: true
+
+- name: refresh_firewall
+  ansible.builtin.command:
+    cmd: nft flush set inet fw4 vpn_domains
+  ignore_errors: true
+  changed_when: false
+
+- name: restart_firewall
+  ansible.builtin.command:
+    cmd: /etc/init.d/firewall restart
+  ignore_errors: true
