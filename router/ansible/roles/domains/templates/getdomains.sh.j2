@@ -47,11 +47,6 @@ start () {
 {% else %}
     # datadog list disabled by domains_datadog=false
 {% endif %}
-{% if domains_figma %}
-    [ -f /tmp/dnsmasq.d/figma.lst ] && cat /tmp/dnsmasq.d/figma.lst >> /tmp/dnsmasq.d/domains.lst
-{% else %}
-    # figma list disabled by domains_figma=false
-{% endif %}
 
     # Удаляем дубликаты
     sort /tmp/dnsmasq.d/domains.lst | uniq > /tmp/dnsmasq.d/domains.lst.tmp

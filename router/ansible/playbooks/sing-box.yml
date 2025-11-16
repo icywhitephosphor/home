@@ -1,7 +1,7 @@
 ---
-- name: Configure domain lists
+- name: Configure sing-box
   hosts: router
   gather_facts: no
   remote_user: root
   roles:
-    - role: domains
+    - role: sing-box

@@ -1,0 +1,12 @@
+---
+- name: Commit wireless configuration
+  ansible.builtin.command:
+    cmd: uci commit wireless
+  changed_when: false
+  listen: commit_and_reload_wifi
+
+- name: Reload wireless subsystem
+  ansible.builtin.command:
+    cmd: wifi reload
+  changed_when: false
+  listen: commit_and_reload_wifi

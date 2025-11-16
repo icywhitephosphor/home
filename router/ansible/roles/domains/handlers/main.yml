@@ -2,7 +2,6 @@
 - name: rebuild_domains
   ansible.builtin.command:
     cmd: sh /etc/init.d/getdomains start
-  # On OpenWrt getdomains usually restarts dnsmasq; ignore non-zero if device-specific
   ignore_errors: true
 
 - name: refresh_firewall

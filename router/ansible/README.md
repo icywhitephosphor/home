@@ -7,9 +7,11 @@
 - `envs/hosts.ini` — инвентарь (по умолчанию `192.168.1.1`, пользователь `root`).
 - `playbooks/domains.yml` — только обновление `getdomains` и списков доменов.
 - `playbooks/router_full.yml` — полный цикл: домены + Wi-Fi + sing-box.
+- `playbooks/sing-box.yml` — точечный прогон только роли `sing-box`.
+- `group_vars/router.yml` — приватные параметры VPN (сервер, UUID, Reality-ключи).
 - `roles/domains` — управление списками доменов и скриптом `getdomains`.
 - `roles/wifi` — конфигурация Wi-Fi через UCI (нужна коллекция `community.general`).
-- `roles/sing_box` — шаблон `config.json` и перезапуск служб.
+- `roles/sing-box` — шаблон `config.json` и перезапуск служб.
 
 ### Подготовка
 1. Настройте доступ по SSH к роутеру (`root@192.168.1.1`).
@@ -35,6 +37,12 @@ ansible-playbook playbooks/domains.yml --diff
 ansible-playbook playbooks/router_full.yml --diff
 ```
 
+- Только sing-box (если нужно обновить конфиг VPN или перезапустить сервис):
+
+```bash
+ansible-playbook playbooks/sing-box.yml --diff
+```
+
 Добавьте `-k`, если требуется ввод пароля. Для dry-run используйте `--check`.
 
 ### Роль `domains`
@@ -50,11 +58,12 @@ ansible-playbook playbooks/router_full.yml --diff
 - После любых изменений вызывает хендлер, который делает `uci commit wireless` и `wifi reload`.
 - Параметры лежат в `roles/wifi/defaults/main.yml` и описывают список устройств/интерфейсов.
 
-### Роль `sing_box`
+### Роль `sing-box`
 - Создаёт каталог `/etc/sing-box`, развертывает `config.json` из шаблона и делает бэкап старого файла.
 - При необходимости включает автозапуск (`/etc/init.d/sing-box enable`).
 - Хендлер перезапускает `sing-box`, а затем (если `sing_box_apply_network_restart: true`) перезапускает `network`.
-- Значения для шаблона задаются в `roles/sing_box/defaults/main.yml`.
+- Удобнее всего задавать реальные параметры сервера в `group_vars/router.yml` (в репозитории лежит рабочий пример). 
+- В `roles/sing-box/defaults/main.yml` оставлены безопасные значения по умолчанию. Обязательно заполните `sing_box_outbound.reality.short_id` (и при необходимости остальные поля) в `group_vars/router.yml` или с помощью `ansible-vault`.
 
 ### Полезные замечания
 - Убедитесь, что на роутере установлен `python3` (OpenWrt по умолчанию его не содержит).

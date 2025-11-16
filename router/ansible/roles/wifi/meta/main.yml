@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: ionegulkin
+  description: Configure OpenWrt Wi-Fi radios and interfaces via UCI
+  license: MIT
+  min_ansible_version: 2.10
+collections:
+  - community.general
+dependencies: []

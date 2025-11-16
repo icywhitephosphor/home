@@ -1,0 +1,33 @@
+---
+sing_box_log_level: info
+sing_box_inbound:
+  interface_name: tun0
+  domain_strategy: ipv4_only
+  inet4_address: 172.16.250.1/30
+  auto_route: false
+  strict_route: false
+  sniff: true
+
+sing_box_outbound:
+  tag: vpn-out
+  type: vless
+  server: ''
+  server_port: 443
+  uuid: ''
+  flow: xtls-rprx-vision
+  tls:
+    enabled: true
+    insecure: false
+    server_name: www.yandex.com
+  utls:
+    enabled: true
+    fingerprint: random
+  reality:
+    enabled: true
+    public_key: ''
+    short_id: ''
+
+sing_box_route:
+  auto_detect_interface: true
+
+sing_box_apply_network_restart: true

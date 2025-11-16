@@ -9,20 +9,16 @@
 
 - name: Upload domain lists
   ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: /tmp/dnsmasq.d/{{ item }}
+    src: "{{ item.name }}"
+    dest: /tmp/dnsmasq.d/{{ item.name }}
     owner: root
     group: root
     mode: "0644"
     backup: true
-  loop:
-    - copilot.lst
-    - datadog.lst
-    - figma.lst
-    - google.lst
-    - instagram.lst
-    - netflix.lst
-    - telegram.lst
+  loop: "{{ domains_local_lists }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.enabled | bool
   notify:
     - rebuild_domains
     - refresh_firewall
