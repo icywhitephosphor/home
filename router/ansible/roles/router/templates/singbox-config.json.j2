@@ -1,0 +1,56 @@
+{
+  "log": {
+    "level": "{{ router_singbox_log_level }}"
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "interface_name": "{{ router_singbox_inbound.interface_name }}",
+      "domain_strategy": "{{ router_singbox_inbound.domain_strategy }}",
+      "address": {{ router_singbox_inbound.address | to_json }},
+      "mtu": {{ router_singbox_inbound.mtu }},
+      "auto_route": {{ router_singbox_inbound.auto_route | lower }},
+      "strict_route": {{ router_singbox_inbound.strict_route | lower }},
+      "sniff": {{ router_singbox_inbound.sniff | lower }},
+      "stack": "{{ router_singbox_inbound.stack }}",
+      "endpoint_independent_nat": {{ router_singbox_inbound.endpoint_independent_nat | lower }},
+      "udp_timeout": "{{ router_singbox_inbound.udp_timeout }}"
+    }{% if router_proxy_enabled %},
+    {
+      "type": "mixed",
+      "listen": "0.0.0.0",
+      "listen_port": {{ router_proxy_port }},
+      "sniff": true
+    }{% endif %}
+
+  ],
+  "outbounds": [
+    {
+      "tag": "{{ router_singbox_outbound.tag }}",
+      "type": "{{ router_singbox_outbound.type }}",
+      "server": "{{ router_singbox_outbound.server }}",
+      "server_port": {{ router_singbox_outbound.server_port }},
+      "uuid": "{{ router_singbox_outbound.uuid }}",
+      "flow": "{{ router_singbox_outbound.flow }}",
+      "tls": {
+        "enabled": {{ router_singbox_outbound.tls.enabled | lower }},
+        "insecure": {{ router_singbox_outbound.tls.insecure | lower }},
+        "server_name": "{{ router_singbox_outbound.tls.server_name }}",
+        "disable_sni": {{ router_singbox_outbound.tls.disable_sni | lower }},
+        "utls": {
+          "enabled": {{ router_singbox_outbound.utls.enabled | lower }},
+          "fingerprint": "{{ router_singbox_outbound.utls.fingerprint }}"
+        },
+        "reality": {
+          "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
+          "public_key": "{{ router_singbox_outbound.reality.public_key }}",
+          "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
+
+        }
+      }
+    }
+  ],
+  "route": {
+    "auto_detect_interface": {{ router_singbox_route.auto_detect_interface | lower }}
+  }
+}

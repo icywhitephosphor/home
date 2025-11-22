@@ -1,7 +1,0 @@
----
-galaxy_info:
-  author: ionegulkin
-  description: Deploy sing-box config and restart services on OpenWrt
-  license: MIT
-  min_ansible_version: 2.10
-dependencies: []

@@ -1,0 +1,52 @@
+#!/bin/sh
+# {{ ansible_managed }}
+
+# Генерация PAC файла из списка доменов
+
+PAC_FILE="/www/proxy.pac"
+DOMAINS_FILE="/tmp/dnsmasq.d/domains.lst"
+
+# Создаём /www если нет
+mkdir -p /www
+
+# Начало PAC файла
+cat > "$PAC_FILE" << 'EOF'
+function FindProxyForURL(url, host) {
+    // Проверка: мы дома? (роутер 192.168.1.1 доступен)
+    // Если не дома - всё напрямую
+    if (!isResolvable("192.168.1.1")) {
+        return "DIRECT";
+    }
+
+    // Локальные адреса и IP - напрямую
+    if (isPlainHostName(host) ||
+        shExpMatch(host, "localhost") ||
+        shExpMatch(host, "127.0.0.*") ||
+        shExpMatch(host, "192.168.*") ||
+        shExpMatch(host, "10.*") ||
+        shExpMatch(host, "172.16.*") ||
+        shExpMatch(host, "*.local")) {
+        return "DIRECT";
+    }
+
+    // Домены из списка - через SOCKS5 прокси на роутере
+EOF
+
+# Извлекаем домены и добавляем в PAC
+sed 's|nftset=/\([^/]*\)/.*|\1|' "$DOMAINS_FILE" | sort -u | while read domain; do
+    # Экранируем точки для регулярки
+    escaped_domain=$(echo "$domain" | sed 's/\./\\./g')
+    echo "    if (shExpMatch(host, \"*$domain\") || shExpMatch(host, \"$domain\")) {" >> "$PAC_FILE"
+    echo "        return \"SOCKS5 192.168.1.1:2080; DIRECT\";" >> "$PAC_FILE"
+    echo "    }" >> "$PAC_FILE"
+done
+
+# Завершение PAC файла
+cat >> "$PAC_FILE" << 'EOF'
+
+    // Всё остальное - напрямую
+    return "DIRECT";
+}
+EOF
+
+echo "PAC файл создан: $PAC_FILE"

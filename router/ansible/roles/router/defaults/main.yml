@@ -1,0 +1,80 @@
+---
+# defaults file for router role
+
+# System Configuration
+router_ipv6_enabled: false
+router_network_lan_ipaddr: "192.168.1.1"
+router_network_lan_netmask: "255.255.255.0"
+router_network_wan_proto: "dhcp"
+router_network_wan_mac: "{{ ansible_facts['default_ipv4']['macaddress'] | default('') }}"
+
+# Proxy Configuration
+router_proxy_enabled: false
+router_proxy_port: 2080
+
+# Domain Lists - простое управление через true/false
+router_domains_lists:
+  - { name: copilot, file: copilot.lst }
+  - { name: openai, file: openai.lst }
+  - { name: google, file: google.lst }
+  - { name: datadog, file: datadog.lst }
+  - { name: instagram, file: instagram.lst }
+  - { name: netflix, file: netflix.lst }
+  - { name: telegram, file: telegram.lst }
+
+# Sing-box Configuration
+# Log level: trace, debug, info, warn, error, fatal, panic
+router_singbox_log_level: error
+
+# TUN Inbound Configuration
+router_singbox_inbound:
+  interface_name: tun0 # Virtual device name
+  address: ["172.16.250.1/30"] # IPv4/IPv6 prefixes for tun (replaces inet4_address)
+  domain_strategy: ipv4_only # Domain resolution strategy: prefer_ipv4, prefer_ipv6, ipv4_only, ipv6_only
+  mtu: 9000 # Maximum transmission unit
+  auto_route: false # Set default route to TUN (requires route.auto_detect_interface)
+  strict_route: false # Enforce strict routing rules
+  sniff: true # Enable protocol sniffing
+  stack: system # TCP/IP stack: system, gvisor, mixed
+  endpoint_independent_nat: false # Enable endpoint-independent NAT (gvisor only)
+  udp_timeout: "5m" # UDP NAT expiration time
+
+# Route Configuration
+router_singbox_route:
+  auto_detect_interface: true # Auto-detect default interface
+
+# VLESS Outbound - полная структура с дефолтами
+# В group_vars переопределяются только реальные значения (server, uuid, keys)
+router_singbox_outbound:
+  tag: vpn-out # Outbound tag
+  type: vless # Protocol type
+  server: "" # VPN server address (REQUIRED in group_vars)
+  server_port: 443 # VPN server port
+  uuid: "" # VLESS user ID (REQUIRED in group_vars)
+  flow: xtls-rprx-vision # VLESS flow: xtls-rprx-vision or empty
+
+  # TLS Configuration
+  tls:
+    enabled: true # Enable TLS
+    insecure: false # Accept any server certificate (DANGEROUS)
+    server_name: "" # SNI server name for TLS (REQUIRED in group_vars)
+    disable_sni: false # Do not send SNI in ClientHello
+
+  # uTLS Configuration (ClientHello fingerprinting resistance)
+  utls:
+    enabled: true # Enable uTLS
+    # Fingerprint: chrome, firefox, edge, safari, ios, android, random, 360, qq
+    # randomized: Randomly choose a fingerprint for each connection
+    # chrome/firefox/edge/safari: Mimic specific desktop browsers
+    # ios/android: Mimic mobile devices
+    fingerprint: random
+
+  # Reality Configuration (TLS camouflage)
+  reality:
+    enabled: false # Enable Reality protocol
+    public_key: "" # Reality public key (generate with: sing-box generate reality-keypair)
+    short_id: "" # Hexadecimal string (0-8 digits)
+
+# WiFi Configuration
+router_wifi_devices: []
+router_wifi_ifaces: []

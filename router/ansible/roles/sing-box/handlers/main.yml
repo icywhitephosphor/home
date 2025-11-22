@@ -1,4 +1,0 @@
----
-- name: restart_sing_box
-  ansible.builtin.command:
-    cmd: /etc/init.d/sing-box restart

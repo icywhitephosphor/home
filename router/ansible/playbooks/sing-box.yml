@@ -1,7 +1,0 @@
----
-- name: Configure sing-box
-  hosts: router
-  gather_facts: no
-  remote_user: root
-  roles:
-    - role: sing-box

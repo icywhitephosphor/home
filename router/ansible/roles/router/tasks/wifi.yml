@@ -1,0 +1,44 @@
+---
+# WiFi configuration tasks
+- name: Show current wireless configuration
+  ansible.builtin.command:
+    cmd: uci show wireless
+  changed_when: false
+  register: router_wifi_config
+
+- name: Toggle Wi-Fi devices
+  openwrt_uci_option:
+    config: wireless
+    section: "@wifi-device[{{ item.index }}]"
+    option: disabled
+    value: "{{ '0' if item.enabled else '1' }}"
+  loop: "{{ router_wifi_devices }}"
+  loop_control:
+    label: "device {{ item.index }}"
+  notify: Commit and reload WiFi
+
+- name: Toggle Wi-Fi interfaces
+  openwrt_uci_option:
+    config: wireless
+    section: "@wifi-iface[{{ item.index }}]"
+    option: disabled
+    value: "{{ '0' if item.enabled else '1' }}"
+  loop: "{{ router_wifi_ifaces }}"
+  loop_control:
+    label: "iface {{ item.index }}"
+  notify: Commit and reload WiFi
+
+- name: Apply Wi-Fi interface options
+  openwrt_uci_option:
+    config: wireless
+    section: "@wifi-iface[{{ item.0.index }}]"
+    option: "{{ item.1.option }}"
+    value: "{{ item.1.value }}"
+  loop: "{{ router_wifi_ifaces | subelements('options') }}"
+  notify: Commit and reload WiFi
+
+- name: Check Wi-Fi status
+  ansible.builtin.command:
+    cmd: wifi status
+  changed_when: false
+  register: router_wifi_status

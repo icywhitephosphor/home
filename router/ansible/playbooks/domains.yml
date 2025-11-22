@@ -1,7 +1,0 @@
----
-- name: Configure domain lists
-  hosts: router
-  gather_facts: no
-  remote_user: root
-  roles:
-    - role: domains

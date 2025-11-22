@@ -1,9 +1,7 @@
 ---
-- name: Configure full router
+- name: Configure OpenWrt router
   hosts: router
-  gather_facts: no
+  gather_facts: true
   remote_user: root
   roles:
-    - role: domains
-    - role: wifi
-    - role: sing-box
+    - role: router

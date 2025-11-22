@@ -1,0 +1,43 @@
+---
+# Domains configuration tasks
+- name: Ensure dnsmasq.d directory exists
+  ansible.builtin.file:
+    path: /etc/dnsmasq.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Upload domain lists
+  ansible.builtin.copy:
+    src: "{{ item.file }}"
+    dest: /etc/dnsmasq.d/{{ item.file }}
+    owner: root
+    group: root
+    mode: "0644"
+    backup: false
+  loop: "{{ router_domains_lists }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: vars['router_domains_' + item.name] | default(false)
+
+- name: Deploy getdomains script
+  ansible.builtin.template:
+    src: getdomains.sh.j2
+    dest: /etc/init.d/getdomains
+    owner: root
+    group: root
+    mode: "0755"
+    backup: false
+
+- name: Enable getdomains autostart
+  ansible.builtin.command:
+    cmd: /etc/init.d/getdomains enable
+  changed_when: false
+
+- name: Rebuild domains list
+  ansible.builtin.command:
+    cmd: /etc/init.d/getdomains start
+  changed_when: true
+  notify:
+    - Reload firewall

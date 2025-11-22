@@ -1,0 +1,31 @@
+---
+# Cleanup tasks to remove Ansible backup files
+- name: Find Ansible backup files in /etc/init.d
+  ansible.builtin.find:
+    paths: /etc/init.d
+    patterns: "*~"
+    recurse: no
+  register: backup_files_init
+
+- name: Remove Ansible backup files in /etc/init.d
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ backup_files_init.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Find Ansible backup files in /etc/config
+  ansible.builtin.find:
+    paths: /etc/config
+    patterns: "*~"
+    recurse: no
+  register: backup_files_config
+
+- name: Remove Ansible backup files in /etc/config
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ backup_files_config.files }}"
+  loop_control:
+    label: "{{ item.path }}"

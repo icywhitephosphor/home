@@ -1,0 +1,25 @@
+---
+# Main tasks file for router role
+- name: Import network configuration tasks
+  ansible.builtin.import_tasks: network.yml
+  tags: [network]
+
+- name: Import domains configuration tasks
+  ansible.builtin.import_tasks: domains.yml
+  tags: [domains]
+
+- name: Import PAC file generation tasks
+  ansible.builtin.import_tasks: pac.yml
+  tags: [pac]
+
+- name: Import sing-box configuration tasks
+  ansible.builtin.import_tasks: singbox.yml
+  tags: [singbox]
+
+- name: Import WiFi configuration tasks
+  ansible.builtin.import_tasks: wifi.yml
+  tags: [wifi]
+
+- name: Import cleanup tasks
+  ansible.builtin.import_tasks: cleanup.yml
+  tags: [cleanup]

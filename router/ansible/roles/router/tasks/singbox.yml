@@ -1,0 +1,41 @@
+---
+# Sing-box VPN configuration tasks
+- name: Update package lists
+  ansible.builtin.command: opkg update
+  changed_when: false
+
+- name: Install or update sing-box
+  ansible.builtin.command: opkg install sing-box
+  register: singbox_install
+  changed_when: "'Configuring sing-box' in singbox_install.stdout"
+
+- name: Create sing-box directory
+  ansible.builtin.file:
+    path: /etc/sing-box
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy sing-box configuration
+  ansible.builtin.template:
+    src: singbox-config.json.j2
+    dest: /etc/sing-box/config.json
+    owner: root
+    group: root
+    mode: "0644"
+    backup: false
+  notify: Restart sing-box
+
+- name: Check if sing-box autostart is enabled
+  ansible.builtin.find:
+    paths: /etc/rc.d
+    patterns: "S*sing-box"
+    file_type: link
+  register: router_singbox_autostart
+
+- name: Enable sing-box autostart
+  ansible.builtin.command:
+    cmd: /etc/init.d/sing-box enable
+  when: router_singbox_autostart.matched == 0
+  changed_when: true

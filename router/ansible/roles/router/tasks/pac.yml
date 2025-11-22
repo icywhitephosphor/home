@@ -1,0 +1,15 @@
+---
+# PAC file generation tasks
+- name: Deploy PAC generator script
+  ansible.builtin.template:
+    src: generate-pac.sh.j2
+    dest: /usr/bin/generate-pac
+    owner: root
+    group: root
+    mode: "0755"
+    backup: false
+
+- name: Generate PAC file
+  ansible.builtin.command:
+    cmd: /usr/bin/generate-pac
+  changed_when: true
