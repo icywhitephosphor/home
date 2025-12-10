@@ -21,6 +21,10 @@ router_domains_lists:
   - { name: instagram, file: instagram.lst }
   - { name: netflix, file: netflix.lst }
   - { name: telegram, file: telegram.lst }
+  - { name: claude, file: claude.lst }
+  - { name: x, file: x.lst }
+  - { name: linkedin, file: linkedin.lst }
+  - { name: windsurf, file: windsurf.lst }
 
 # Sing-box Configuration
 # Log level: trace, debug, info, warn, error, fatal, panic
