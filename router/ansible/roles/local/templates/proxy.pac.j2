@@ -1,0 +1,25 @@
+function FindProxyForURL(url, host) {
+    // Локальные адреса - напрямую
+    if (isPlainHostName(host) ||
+        shExpMatch(host, "localhost") ||
+        shExpMatch(host, "127.0.0.*") ||
+        shExpMatch(host, "192.168.*") ||
+        shExpMatch(host, "10.*") ||
+        shExpMatch(host, "172.16.*") ||
+        shExpMatch(host, "*.local")) {
+        return "DIRECT";
+    }
+
+    var vpnDomains = {{ pac_domains | to_json }};
+
+    for (var i = 0; i < vpnDomains.length; i++) {
+        if (dnsDomainIs(host, vpnDomains[i]) ||
+            dnsDomainIs(host, "." + vpnDomains[i]) ||
+            host === vpnDomains[i]) {
+            return "PROXY 127.0.0.1:{{ local_proxy_http_port }}";
+        }
+    }
+
+    return "DIRECT";
+}
+

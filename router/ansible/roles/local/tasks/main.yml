@@ -1,0 +1,105 @@
+---
+# Main tasks for local role (macOS sing-box)
+
+- name: Validate macOS
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Darwin"
+    fail_msg: "This role is only for macOS"
+
+- name: Validate runtime selection
+  ansible.builtin.assert:
+    that:
+      - local_runtime in ['launchd', 'docker', 'brew', 'binary']
+      - local_runtime != 'docker' or local_singbox_mode == 'proxy'
+    fail_msg: >-
+      Invalid runtime. Use: launchd, docker, brew, or binary.
+      Docker runtime supports only proxy mode.
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: "{{ local_config_dir }}"
+    state: directory
+    mode: "0755"
+
+# Build domain list from .lst files in roles/router/files/
+- name: Parse enabled domain lists
+  ansible.builtin.set_fact:
+    local_domains_parsed: >-
+      {{
+        local_domains_parsed | default([]) +
+        (lookup('file', playbook_dir + '/roles/router/files/' + item + '.lst', errors='ignore') | default(''))
+        | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
+      }}
+  loop: "{{ local_enabled_domains }}"
+
+- name: Deduplicate domain list
+  ansible.builtin.set_fact:
+    local_routing_domains: "{{ local_domains_parsed | unique | sort }}"
+
+- name: Generate PAC file
+  when: local_pac_enabled | default(true)
+  ansible.builtin.include_tasks: pac.yml
+
+- name: Generate sing-box configuration
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: "{{ local_config_dir }}/config.json"
+    mode: "0600"
+  notify: "{{ _notify_handlers }}"
+  vars:
+    _notify_handlers: >-
+      {{
+        {
+          'docker': ['Restart sing-box (docker)'],
+          'launchd': ['Restart sing-box (launchd)'],
+          'brew': ['Restart sing-box (brew)']
+        }.get(local_runtime, [])
+      }}
+
+- name: Validate sing-box configuration
+  ansible.builtin.command:
+    cmd: sing-box check -c {{ local_config_dir }}/config.json
+  changed_when: false
+  when: local_runtime in ['launchd', 'binary']
+
+# Runtime-specific tasks
+- name: Setup launchd service
+  when: local_runtime == 'launchd'
+  ansible.builtin.include_tasks: launchd.yml
+
+- name: Setup Docker container
+  when: local_runtime == 'docker'
+  ansible.builtin.include_tasks: docker.yml
+
+- name: Setup binary runtime
+  when: local_runtime == 'binary'
+  ansible.builtin.include_tasks: binary.yml
+
+- name: Setup Homebrew service
+  when: local_runtime == 'brew'
+  ansible.builtin.include_tasks: brew.yml
+
+- name: Display post-install info
+  ansible.builtin.debug:
+    msg: |
+      ✅ sing-box configured successfully!
+      
+      Config: {{ local_config_dir }}/config.json
+      PAC:    {{ local_pac_path }}
+      Mode:   {{ local_singbox_mode }}
+      Proxy:  127.0.0.1:{{ local_proxy_http_port }}
+      
+      {% if local_runtime == 'binary' %}
+      To start manually: {{ local_binary_run_script }}
+      {% elif local_runtime == 'brew' %}
+      Service: brew services info sing-box
+      {% elif local_runtime == 'launchd' %}
+      Service: launchctl list | grep sing-box
+      {% elif local_runtime == 'docker' %}
+      Container: docker ps | grep sing-box
+      {% endif %}
+      
+      Configure your browser/system to use:
+      - HTTP Proxy: 127.0.0.1:{{ local_proxy_http_port }}
+      - Or PAC file: file://{{ local_pac_path }}

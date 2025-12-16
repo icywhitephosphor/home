@@ -1,0 +1,123 @@
+---
+# defaults file for local role (macOS sing-box)
+
+# ============================================================================
+# Runtime Configuration
+# ============================================================================
+
+# Режим запуска sing-box:
+#   - binary   : установка через Homebrew + скрипт для ручного запуска
+#   - brew     : управление через `brew services`
+#   - launchd  : macOS LaunchAgent (автозапуск)
+#   - docker   : контейнер (только proxy mode)
+local_runtime: binary
+
+# Режим работы: proxy (рекомендуется) или tun
+local_singbox_mode: proxy
+
+# ============================================================================
+# Network Configuration
+# ============================================================================
+
+# Порты для proxy mode
+local_proxy_http_port: 2080
+local_proxy_socks_port: 2081
+
+# ============================================================================
+# Paths
+# ============================================================================
+
+local_config_dir: "{{ ansible_env.HOME }}/.config/sing-box"
+local_brew_config_path: "/opt/homebrew/etc/sing-box/config.json"
+local_binary_run_script: "{{ local_config_dir }}/run-sing-box.sh"
+local_pac_path: "{{ local_config_dir }}/proxy.pac"
+
+# Log path (varies by runtime)
+local_log_file: >-
+  {{
+    (local_runtime == 'docker') | ternary('/config/sing-box.log',
+    (local_runtime == 'brew') | ternary('/opt/homebrew/var/log/sing-box.log',
+    ansible_env.HOME + '/Library/Logs/sing-box.log'))
+  }}
+
+# ============================================================================
+# Domain Lists
+# ============================================================================
+
+# Включённые списки доменов (имена файлов без расширения из roles/router/files/)
+local_enabled_domains:
+  - openai
+  - copilot
+  - google
+  - claude
+  - datadog
+  - instagram
+  - netflix
+  - x
+  - linkedin
+  - windsurf
+  # - telegram  # раскомментировать при необходимости
+
+# ============================================================================
+# PAC File Configuration
+# ============================================================================
+
+local_pac_enabled: true
+local_pac_validate_certs: true
+
+# Внешние источники доменов (ipset/nftset формат)
+local_pac_extra_sources:
+  - "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-ipset.lst"
+
+# ============================================================================
+# sing-box Configuration
+# ============================================================================
+
+# Log level: trace, debug, info, warn, error, fatal, panic
+local_singbox_log_level: info
+
+# TUN Configuration (только для mode: tun)
+local_singbox_tun:
+  interface_name: utun99
+  address:
+    - "172.16.250.1/30"
+  mtu: 9000
+  auto_route: true
+  strict_route: false
+  stack: system
+
+# ============================================================================
+# VLESS Outbound
+# ============================================================================
+
+# ВАЖНО: server, uuid, tls.server_name должны быть заданы в group_vars!
+local_singbox_outbound:
+  tag: vpn-out
+  type: vless
+  server: ""           # REQUIRED in group_vars
+  server_port: 443
+  uuid: ""             # REQUIRED in group_vars
+  flow: xtls-rprx-vision
+
+  tls:
+    enabled: true
+    insecure: false
+    server_name: ""    # REQUIRED in group_vars
+    disable_sni: false
+
+  utls:
+    enabled: true
+    fingerprint: random
+
+  reality:
+    enabled: false
+    public_key: ""
+    short_id: ""
+
+# ============================================================================
+# Docker Configuration (for local_runtime: docker)
+# ============================================================================
+
+local_docker_image: "ghcr.io/sagernet/sing-box:latest"
+local_docker_container_name: "sing-box"
+local_docker_restart_policy: "unless-stopped"

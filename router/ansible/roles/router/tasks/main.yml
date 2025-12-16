@@ -1,5 +1,9 @@
 ---
 # Main tasks file for router role
+- name: Import packages installation tasks
+  ansible.builtin.import_tasks: packages.yml
+  tags: [packages]
+
 - name: Import network configuration tasks
   ansible.builtin.import_tasks: network.yml
   tags: [network]

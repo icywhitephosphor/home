@@ -6,24 +6,29 @@ START=99
 start () {
     # Всё храним в /etc/dnsmasq.d/ (persistent storage)
     DOMAINS=https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-nfset.lst
-    count=0
-    while true; do
-        if curl -m 3 github.com; then
-            curl -f $DOMAINS --output /etc/dnsmasq.d/domains.lst
-            break
-        else
-            echo "GitHub is not available. Check the internet availability [$count]"
-            count=$((count+1))
+    
+    # Пытаемся скачать список (максимум 3 попытки)
+    for i in 1 2 3; do
+        if curl -m 3 github.com >/dev/null 2>&1; then
+            if curl -f $DOMAINS --output /etc/dnsmasq.d/domains.lst; then
+                break
+            fi
         fi
+        echo "GitHub is not available or download failed. Attempt $i of 3."
+        sleep 2
     done
+    
+    # Если не скачалось и файла нет - создаем пустой
+    [ ! -f /etc/dnsmasq.d/domains.lst ] && touch /etc/dnsmasq.d/domains.lst
+
     sed -i '/kinovod/d' /etc/dnsmasq.d/domains.lst
 
-    # Добавляем локальные файлы из /etc/dnsmasq.d/
-{% for domain in router_domains_lists %}
-{% if vars['router_domains_' + domain.name] | default(false) %}
-    [ -f /etc/dnsmasq.d/{{ domain.file }} ] && cat /etc/dnsmasq.d/{{ domain.file }} >> /etc/dnsmasq.d/domains.lst
-{% endif %}
-{% endfor %}
+    # Добавляем ВСЕ локальные .lst файлы (кроме самого domains.lst)
+    for file in /etc/dnsmasq.d/*.lst; do
+        # Пропускаем сам файл domains.lst чтобы не дублировать
+        [ "$file" = "/etc/dnsmasq.d/domains.lst" ] && continue
+        [ -f "$file" ] && cat "$file" >> /etc/dnsmasq.d/domains.lst
+    done
 
     # Удаляем дубликаты
     sort -u /etc/dnsmasq.d/domains.lst -o /etc/dnsmasq.d/domains.lst

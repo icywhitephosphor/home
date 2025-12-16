@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# nftables rules for 2G WiFi VPN exclusion (fw4 compatible)
+
+{% if router_2g_without_vpn | default(false) %}
+# Clear VPN mark for traffic coming from 2G WiFi interface (wl0-ap0)
+# Insert rule into fw4 mangle_prerouting chain before mark_domains rule
+chain exclude_2g_from_vpn {
+    type filter hook prerouting priority mangle - 5; policy accept;
+    ibrname "wl0-ap0" meta mark set 0x0 comment "Skip VPN for 2G WiFi"
+}
+{% endif %}

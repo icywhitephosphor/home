@@ -6,9 +6,12 @@ config interface 'loopback'
 	option ipaddr '127.0.0.1'
 	option netmask '255.0.0.0'
 
-{% if router_ipv6_enabled | default(false) %}
 config globals 'globals'
+{% if router_ipv6_enabled | default(false) %}
 	option ula_prefix 'fd51:3af7:06f2::/48'
+{% endif %}
+{% if router_packet_steering | default(true) %}
+	option packet_steering '1'
 {% endif %}
 
 config device
@@ -39,13 +42,23 @@ config device
 config interface 'wan'
 	option device 'wan'
 	option proto '{{ router_network_wan_proto | default("dhcp") }}'
+	option peerdns '0'
+	option dns '8.8.8.8 1.1.1.1'
 {% if not router_ipv6_enabled | default(false) %}
 	option ipv6 '0'
 	option delegate '0'
 {% endif %}
+
+{% if router_vpn_enabled | default(true) %}
+# VPN routing table with fallback to WAN
+config route 'vpn_fallback'
+	option interface 'wan'
+	option target '0.0.0.0/0'
+	option table 'vpn'
 
 config rule
 	option name 'mark0x1'
 	option mark '0x1'
 	option priority '100'
 	option lookup 'vpn'
+{% endif %}

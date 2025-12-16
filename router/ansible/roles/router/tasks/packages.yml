@@ -1,0 +1,13 @@
+---
+# Packages installation tasks
+- name: Update package lists
+  ansible.builtin.command:
+    cmd: opkg update
+  changed_when: false
+
+- name: Install required packages
+  ansible.builtin.command:
+    cmd: opkg install ipset curl ca-bundle ca-certificates
+  changed_when: false
+  # ignore errors in case packages are already installed or opkg fails temporarily
+  ignore_errors: true

@@ -1,0 +1,47 @@
+---
+# PAC file generation
+
+# Fetch external domain sources
+- name: Fetch external domain sources
+  ansible.builtin.get_url:
+    url: "{{ item }}"
+    dest: "{{ local_config_dir }}/.pac_cache_{{ item | hash('md5') }}"
+    mode: "0644"
+    validate_certs: "{{ local_pac_validate_certs }}"
+  register: _pac_fetch
+  changed_when: false
+  failed_when: false
+  loop: "{{ local_pac_extra_sources | default([]) }}"
+
+# Parse external sources
+- name: Parse external domain sources
+  ansible.builtin.set_fact:
+    local_pac_domains_external: >-
+      {{
+        local_pac_domains_external | default([]) +
+        (lookup('file', item.dest, errors='ignore') | default(''))
+        | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
+      }}
+  loop: "{{ _pac_fetch.results | default([]) }}"
+  when:
+    - item.dest is defined
+    - item.failed | default(false) | bool == false
+
+# Merge all domains for PAC
+- name: Build final PAC domain list
+  ansible.builtin.set_fact:
+    local_pac_domains: >-
+      {{
+        (
+          (local_routing_domains | default([])) +
+          (local_pac_domains_external | default([]))
+        ) | unique | sort
+      }}
+
+- name: Render PAC file
+  ansible.builtin.template:
+    src: proxy.pac.j2
+    dest: "{{ local_pac_path }}"
+    mode: "0644"
+  vars:
+    pac_domains: "{{ local_pac_domains }}"

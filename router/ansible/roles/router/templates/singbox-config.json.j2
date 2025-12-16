@@ -2,6 +2,17 @@
   "log": {
     "level": "{{ router_singbox_log_level }}"
   },
+  "dns": {
+    "servers": [
+      {
+        "tag": "vpn-dns",
+        "address": "tls://8.8.8.8",
+        "detour": "{{ router_singbox_outbound.tag }}"
+      }
+    ],
+    "strategy": "ipv4_only",
+    "final": "vpn-dns"
+  },
   "inbounds": [
     {
       "type": "tun",

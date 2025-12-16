@@ -19,7 +19,7 @@
   loop: "{{ router_domains_lists }}"
   loop_control:
     label: "{{ item.name }}"
-  when: vars['router_domains_' + item.name] | default(false)
+  when: lookup('vars', 'router_domains_' + item.name, default=false)
 
 - name: Deploy getdomains script
   ansible.builtin.template:
@@ -39,5 +39,6 @@
   ansible.builtin.command:
     cmd: /etc/init.d/getdomains start
   changed_when: true
+  ignore_errors: true
   notify:
     - Reload firewall

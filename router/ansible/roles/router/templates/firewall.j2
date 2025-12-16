@@ -5,6 +5,12 @@ config defaults
 	option input 'REJECT'
 	option output 'ACCEPT'
 	option forward 'REJECT'
+{% if router_flow_offloading | default(true) %}
+	option flow_offloading '1'
+{% if router_hw_offloading | default(false) %}
+	option flow_offloading_hw '1'
+{% endif %}
+{% endif %}
 
 config zone
 	option name 'lan'
@@ -52,6 +58,7 @@ config rule
 	option family 'ipv4'
 	option target 'ACCEPT'
 
+{% if router_ipv6_enabled | default(false) %}
 config rule
 	option name 'Allow-DHCPv6'
 	option src 'wan'
@@ -106,6 +113,7 @@ config rule
 	option limit '1000/sec'
 	option family 'ipv6'
 	option target 'ACCEPT'
+{% endif %}
 
 config rule
 	option name 'Allow-IPSec-ESP'
@@ -122,6 +130,7 @@ config rule
 	option proto 'udp'
 	option target 'ACCEPT'
 
+{% if router_vpn_enabled | default(true) %}
 config zone
 	option name 'singbox'
 	option device 'tun0'
@@ -160,7 +169,7 @@ config rule
 	option set_mark '0x1'
 	option target 'MARK'
 	option family 'ipv4'
-
+{% endif %}
 
 
 {% if router_proxy_enabled | default(false) %}

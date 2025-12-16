@@ -25,7 +25,9 @@ config dnsmasq
 {% endif %}
 	option filter_a '0'
 	option noresolv '1'
-	list server '127.0.0.53#53'
+	option localuse '1'
+	list server '8.8.8.8'
+	list server '1.1.1.1'
 	list server '/use-application-dns.net/'
 
 config dhcp 'lan'

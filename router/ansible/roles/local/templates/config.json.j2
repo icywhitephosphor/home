@@ -1,0 +1,116 @@
+{
+  "log": {
+    "level": "{{ local_singbox_log_level }}",
+    "output": "{{ local_log_file }}",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "bootstrap",
+        "type": "udp",
+        "server": "8.8.8.8"
+      },
+      {
+        "tag": "google-doh",
+        "type": "https",
+        "server": "dns.google",
+        "server_port": 443,
+        "domain_resolver": "bootstrap"
+      },
+      {
+        "tag": "cloudflare-doh",
+        "type": "https",
+        "server": "cloudflare-dns.com",
+        "server_port": 443,
+        "domain_resolver": "bootstrap"
+      }
+    ],
+    "rules": [
+{% if local_routing_domains | default([]) | length > 0 %}
+      {
+        "domain_suffix": {{ local_routing_domains | to_json }},
+        "server": "google-doh"
+      }
+{% endif %}
+    ],
+    "final": "cloudflare-doh"
+  },
+  "inbounds": [
+{% if local_singbox_mode == 'proxy' %}
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": {{ local_proxy_http_port }},
+      "sniff": true,
+      "sniff_override_destination": true
+    }
+{% else %}
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "{{ local_singbox_tun.interface_name }}",
+      "address": {{ local_singbox_tun.address | to_json }},
+      "mtu": {{ local_singbox_tun.mtu }},
+      "auto_route": {{ local_singbox_tun.auto_route | lower }},
+      "strict_route": {{ local_singbox_tun.strict_route | lower }},
+      "stack": "{{ local_singbox_tun.stack }}",
+      "sniff": true,
+      "sniff_override_destination": true
+    }
+{% endif %}
+  ],
+  "outbounds": [
+    {
+      "tag": "{{ local_singbox_outbound.tag }}",
+      "type": "{{ local_singbox_outbound.type }}",
+      "server": "{{ local_singbox_outbound.server }}",
+      "server_port": {{ local_singbox_outbound.server_port }},
+      "uuid": "{{ local_singbox_outbound.uuid }}",
+      "flow": "{{ local_singbox_outbound.flow }}",
+      "tls": {
+        "enabled": {{ local_singbox_outbound.tls.enabled | lower }},
+        "insecure": {{ local_singbox_outbound.tls.insecure | lower }},
+        "server_name": "{{ local_singbox_outbound.tls.server_name }}",
+        "disable_sni": {{ local_singbox_outbound.tls.disable_sni | lower }},
+        "utls": {
+          "enabled": {{ local_singbox_outbound.utls.enabled | lower }},
+          "fingerprint": "{{ local_singbox_outbound.utls.fingerprint }}"
+        }
+{% if local_singbox_outbound.reality.enabled %}
+        ,"reality": {
+          "enabled": true,
+          "public_key": "{{ local_singbox_outbound.reality.public_key }}",
+          "short_id": "{{ local_singbox_outbound.reality.short_id }}"
+        }
+{% endif %}
+      }
+    },
+    {
+      "tag": "direct",
+      "type": "direct"
+    }
+  ],
+  "route": {
+    "default_domain_resolver": "google-doh",
+    "rules": [
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+{% if local_routing_domains | default([]) | length > 0 %}
+      {
+        "domain_suffix": {{ local_routing_domains | to_json }},
+        "outbound": "{{ local_singbox_outbound.tag }}"
+      },
+{% endif %}
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      }
+    ],
+    "final": "direct",
+    "auto_detect_interface": true
+  }
+}

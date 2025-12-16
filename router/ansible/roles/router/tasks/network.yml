@@ -31,3 +31,23 @@
     backup: false
   register: router_firewall_config_changed
   notify: Reload firewall
+
+# - name: Ensure nftables.d directory exists
+#   ansible.builtin.file:
+#     path: /etc/nftables.d
+#     state: directory
+#     owner: root
+#     group: root
+#     mode: "0755"
+#   when: router_2g_without_vpn | default(false)
+
+# - name: Deploy nftables rules for 2G WiFi exclusion
+#   ansible.builtin.template:
+#     src: firewall.user.j2
+#     dest: /etc/nftables.d/50-2g-exclude.nft
+#     owner: root
+#     group: root
+#     mode: "0644"
+#     backup: false
+#   when: router_2g_without_vpn | default(false)
+#   notify: Reload firewall

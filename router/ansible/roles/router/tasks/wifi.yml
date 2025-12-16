@@ -28,6 +28,17 @@
     label: "iface {{ item.index }}"
   notify: Commit and reload WiFi
 
+- name: Apply Wi-Fi device options
+  openwrt_uci_option:
+    config: wireless
+    section: "@wifi-device[{{ item.0.index }}]"
+    option: "{{ item.1.option }}"
+    value: "{{ item.1.value }}"
+  loop: "{{ router_wifi_devices | selectattr('options', 'defined') | subelements('options') }}"
+  loop_control:
+    label: "device {{ item.0.index }} {{ item.1.option }}"
+  notify: Commit and reload WiFi
+
 - name: Apply Wi-Fi interface options
   openwrt_uci_option:
     config: wireless

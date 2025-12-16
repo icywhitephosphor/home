@@ -1,0 +1,12 @@
+---
+- name: Configure local sing-box on Mac
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: true
+
+  vars_files:
+    - ../envs/local/group_vars/local.yml
+
+  roles:
+    - local
