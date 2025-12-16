@@ -1,0 +1,113 @@
+---
+# ==============================================================================
+# Router Configuration Example
+# ==============================================================================
+# Скопируйте этот файл в envs/router/group_vars/router.yml
+# и заполните своими значениями (особенно VPN credentials)
+#
+# Для защиты секретов используйте ansible-vault:
+#   ansible-vault encrypt envs/router/group_vars/router.yml
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# System
+# ------------------------------------------------------------------------------
+router_ipv6_enabled: false          # Отключить IPv6 для предотвращения утечек
+
+# ------------------------------------------------------------------------------
+# Network
+# ------------------------------------------------------------------------------
+router_network_lan_ipaddr: "192.168.1.1"
+router_network_lan_netmask: "255.255.255.0"
+router_network_wan_proto: "dhcp"
+# router_network_wan_mac: "AA:BB:CC:DD:EE:FF"  # Опционально: spoof MAC
+
+# ------------------------------------------------------------------------------
+# Proxy (для доступа к sing-box через HTTP/SOCKS5)
+# ------------------------------------------------------------------------------
+router_proxy_enabled: true
+router_proxy_port: 2080
+
+# ------------------------------------------------------------------------------
+# VPN Routing
+# ------------------------------------------------------------------------------
+router_vpn_enabled: true            # Включить маршрутизацию через VPN
+
+# ------------------------------------------------------------------------------
+# Performance
+# ------------------------------------------------------------------------------
+router_flow_offloading: true        # Software offloading
+router_hw_offloading: true          # Hardware offloading (для MT7621/7622)
+
+# ------------------------------------------------------------------------------
+# Domain Lists
+# ------------------------------------------------------------------------------
+# Управление списками доменов для VPN routing
+# Файлы лежат в roles/router/files/*.lst
+
+router_domains_copilot: true        # GitHub Copilot
+router_domains_openai: true         # ChatGPT, OpenAI API
+router_domains_google: true         # Google, YouTube, Gemini
+router_domains_datadog: false       # Datadog monitoring
+router_domains_instagram: true      # Instagram
+router_domains_netflix: true        # Netflix
+router_domains_telegram: false      # Telegram
+router_domains_x: true              # X (Twitter)
+router_domains_linkedin: true       # LinkedIn
+router_domains_windsurf: false      # Windsurf IDE
+router_domains_claude: true         # Claude AI
+
+# ------------------------------------------------------------------------------
+# Sing-box VPN Outbound (VLESS + Reality)
+# ------------------------------------------------------------------------------
+# ⚠️ ОБЯЗАТЕЛЬНО замените значения на свои!
+# Получите их из 3x-ui или аналогичной панели
+
+router_singbox_outbound:
+  tag: vpn-out
+  type: vless
+  server: "YOUR_VPN_SERVER_IP"      # IP вашего VPN сервера
+  server_port: 443                   # Порт
+  uuid: "YOUR-UUID-HERE"             # UUID из 3x-ui
+  flow: xtls-rprx-vision
+  tls:
+    enabled: true
+    insecure: false
+    server_name: www.google.com      # SNI для маскировки
+    disable_sni: false
+  utls:
+    enabled: true
+    fingerprint: random              # chrome, firefox, safari, random
+  reality:
+    enabled: true
+    public_key: "YOUR_REALITY_PUBLIC_KEY"   # Reality public key
+    short_id: "YOUR_SHORT_ID"               # Reality short_id
+
+# ------------------------------------------------------------------------------
+# WiFi Configuration
+# ------------------------------------------------------------------------------
+router_wifi_devices:
+  - index: 0                         # 2.4GHz radio
+    enabled: true
+  - index: 1                         # 5GHz radio
+    enabled: true
+
+router_wifi_ifaces:
+  - index: 0                         # 2.4GHz interface
+    enabled: true
+    options:
+      - option: ssid
+        value: "MyNetwork_2G"
+      - option: encryption
+        value: "psk2+sae"            # WPA2/WPA3
+      - option: key
+        value: "YourSecurePassword"
+  - index: 1                         # 5GHz interface
+    enabled: true
+    options:
+      - option: ssid
+        value: "MyNetwork_5G"
+      - option: encryption
+        value: "psk2+sae"
+      - option: key
+        value: "YourSecurePassword"

@@ -1,0 +1,28 @@
+# Ansible specific
+*.retry
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Private configuration files (contain secrets)
+# Use *.example files as templates
+envs/*/group_vars/*.yml
+!envs/*/group_vars/*.yml.example
+
+# Ansible Galaxy collections (can be reinstalled)
+collections/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store

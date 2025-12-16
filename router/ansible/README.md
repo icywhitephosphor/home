@@ -24,6 +24,28 @@ pip install ansible
 ansible-galaxy collection install community.general
 ```
 
+### Quick Start (Конфигурация)
+
+**Для роутера (OpenWrt):**
+```bash
+# Скопируйте пример конфигурации
+cp envs/router/group_vars/router.yml.example envs/router/group_vars/router.yml
+
+# Отредактируйте — заполните свои VPN credentials
+nano envs/router/group_vars/router.yml
+
+# Зашифруйте секреты (опционально)
+ansible-vault encrypt envs/router/group_vars/router.yml
+```
+
+**Для локального Mac:**
+```bash
+cp envs/local/group_vars/local.yml.example envs/local/group_vars/local.yml
+nano envs/local/group_vars/local.yml
+```
+
+> ⚠️ **Важно:** Файлы `*.yml` в `group_vars/` содержат секреты (UUID, ключи Reality) и добавлены в `.gitignore`. Используйте `*.yml.example` как шаблоны.
+
 ### Запуск
 - Только домены:
 
