@@ -1,13 +1,56 @@
 ---
 # Packages installation tasks
+
 - name: Update package lists
   ansible.builtin.command:
     cmd: opkg update
   changed_when: false
+  check_mode: false
 
 - name: Install required packages
   ansible.builtin.command:
     cmd: opkg install ipset curl ca-bundle ca-certificates
+  register: router_packages_install
+  changed_when: "'Installing' in router_packages_install.stdout"
+  failed_when:
+    - router_packages_install.rc != 0
+    - "'already installed' not in router_packages_install.stderr"
+  check_mode: false
+
+# Performance packages
+- name: Install irqbalance
+  ansible.builtin.command:
+    cmd: opkg install irqbalance
+  register: router_irqbalance_install
+  changed_when: "'Installing' in router_irqbalance_install.stdout"
+  failed_when:
+    - router_irqbalance_install.rc != 0
+    - "'already installed' not in router_irqbalance_install.stderr"
+  check_mode: false
+  when: router_irqbalance_enabled | default(true)
+
+- name: Enable irqbalance in UCI config
+  ansible.builtin.shell:
+    cmd: |
+      current=$(uci -q get irqbalance.irqbalance.enabled || echo "")
+      if [ "$current" != "1" ]; then
+        uci set irqbalance.irqbalance.enabled='1' && uci commit irqbalance
+        echo "changed"
+      fi
+  register: router_irqbalance_uci
+  changed_when: "'changed' in router_irqbalance_uci.stdout"
+  when: router_irqbalance_enabled | default(true)
+
+- name: Enable irqbalance service
+  ansible.builtin.command:
+    cmd: /etc/init.d/irqbalance enable
   changed_when: false
-  # ignore errors in case packages are already installed or opkg fails temporarily
-  ignore_errors: true
+  check_mode: false
+  when: router_irqbalance_enabled | default(true)
+
+- name: Start irqbalance service
+  ansible.builtin.command:
+    cmd: /etc/init.d/irqbalance start
+  changed_when: false
+  check_mode: false
+  when: router_irqbalance_enabled | default(true)

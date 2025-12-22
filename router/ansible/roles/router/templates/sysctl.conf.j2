@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# Performance tuning for gigabit throughput
+
+{% if router_sysctl_enabled | default(true) %}
+# Increase TCP buffer sizes for high-speed networks
+net.core.rmem_max = {{ router_sysctl_rmem_max | default(16777216) }}
+net.core.wmem_max = {{ router_sysctl_wmem_max | default(16777216) }}
+net.core.rmem_default = {{ router_sysctl_rmem_default | default(1048576) }}
+net.core.wmem_default = {{ router_sysctl_wmem_default | default(1048576) }}
+net.ipv4.tcp_rmem = {{ router_sysctl_tcp_rmem | default('4096 1048576 16777216') }}
+net.ipv4.tcp_wmem = {{ router_sysctl_tcp_wmem | default('4096 1048576 16777216') }}
+
+# Increase backlog for high packet rates
+net.core.netdev_max_backlog = {{ router_sysctl_netdev_max_backlog | default(5000) }}
+
+# Enable MTU probing
+net.ipv4.tcp_mtu_probing = {{ router_sysctl_mtu_probing | default(1) }}
+{% endif %}

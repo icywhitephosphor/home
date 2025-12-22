@@ -10,7 +10,7 @@
         "detour": "{{ router_singbox_outbound.tag }}"
       }
     ],
-    "strategy": "ipv4_only",
+    "strategy": "{% if router_ipv6_enabled %}prefer_ipv4{% else %}ipv4_only{% endif %}",
     "final": "vpn-dns"
   },
   "inbounds": [
@@ -36,6 +36,65 @@
 
   ],
   "outbounds": [
+    {% if router_singbox_outbound.server_ipv6 is defined %}
+    {
+      "tag": "{{ router_singbox_outbound.tag }}",
+      "type": "urltest",
+      "outbounds": [
+        "{{ router_singbox_outbound.tag }}-v4",
+        "{{ router_singbox_outbound.tag }}-v6"
+      ],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "10m",
+      "tolerance": 50
+    },
+    {
+      "tag": "{{ router_singbox_outbound.tag }}-v4",
+      "type": "{{ router_singbox_outbound.type }}",
+      "server": "{{ router_singbox_outbound.server }}",
+      "server_port": {{ router_singbox_outbound.server_port }},
+      "uuid": "{{ router_singbox_outbound.uuid }}",
+      "flow": "{{ router_singbox_outbound.flow }}",
+      "tls": {
+        "enabled": {{ router_singbox_outbound.tls.enabled | lower }},
+        "insecure": {{ router_singbox_outbound.tls.insecure | lower }},
+        "server_name": "{{ router_singbox_outbound.tls.server_name }}",
+        "disable_sni": {{ router_singbox_outbound.tls.disable_sni | lower }},
+        "utls": {
+          "enabled": {{ router_singbox_outbound.utls.enabled | lower }},
+          "fingerprint": "{{ router_singbox_outbound.utls.fingerprint }}"
+        },
+        "reality": {
+          "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
+          "public_key": "{{ router_singbox_outbound.reality.public_key }}",
+          "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
+        }
+      }
+    },
+    {
+      "tag": "{{ router_singbox_outbound.tag }}-v6",
+      "type": "{{ router_singbox_outbound.type }}",
+      "server": "{{ router_singbox_outbound.server_ipv6 }}",
+      "server_port": {{ router_singbox_outbound.server_port }},
+      "uuid": "{{ router_singbox_outbound.uuid }}",
+      "flow": "{{ router_singbox_outbound.flow }}",
+      "tls": {
+        "enabled": {{ router_singbox_outbound.tls.enabled | lower }},
+        "insecure": {{ router_singbox_outbound.tls.insecure | lower }},
+        "server_name": "{{ router_singbox_outbound.tls.server_name }}",
+        "disable_sni": {{ router_singbox_outbound.tls.disable_sni | lower }},
+        "utls": {
+          "enabled": {{ router_singbox_outbound.utls.enabled | lower }},
+          "fingerprint": "{{ router_singbox_outbound.utls.fingerprint }}"
+        },
+        "reality": {
+          "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
+          "public_key": "{{ router_singbox_outbound.reality.public_key }}",
+          "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
+        }
+      }
+    }
+    {% else %}
     {
       "tag": "{{ router_singbox_outbound.tag }}",
       "type": "{{ router_singbox_outbound.type }}",
@@ -56,11 +115,11 @@
           "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
           "public_key": "{{ router_singbox_outbound.reality.public_key }}",
           "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
-
         }
       }
     }
-  ],
+    {% endif %}
+],
   "route": {
     "auto_detect_interface": {{ router_singbox_route.auto_detect_interface | lower }}
   }

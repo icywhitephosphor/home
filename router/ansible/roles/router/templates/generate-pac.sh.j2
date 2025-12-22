@@ -5,16 +5,18 @@
 
 PAC_FILE="/www/proxy.pac"
 DOMAINS_FILE="/etc/dnsmasq.d/domains.lst"
+ROUTER_IP="{{ router_network_lan_ipaddr | default('192.168.1.1') }}"
+PROXY_PORT="{{ router_proxy_port | default(2080) }}"
 
 # Создаём /www если нет
 mkdir -p /www
 
 # Начало PAC файла
-cat > "$PAC_FILE" << 'EOF'
+cat > "$PAC_FILE" << EOF
 function FindProxyForURL(url, host) {
     // Проверка: мы дома? (роутер 192.168.1.1 доступен)
     // Если не дома - всё напрямую
-    if (!isResolvable("192.168.1.1")) {
+    if (!isResolvable("$ROUTER_IP")) {
         return "DIRECT";
     }
 
@@ -37,7 +39,7 @@ sed 's|nftset=/\([^/]*\)/.*|\1|' "$DOMAINS_FILE" | sort -u | while read domain; 
     # Экранируем точки для регулярки
     escaped_domain=$(echo "$domain" | sed 's/\./\\./g')
     echo "    if (shExpMatch(host, \"*$domain\") || shExpMatch(host, \"$domain\")) {" >> "$PAC_FILE"
-    echo "        return \"SOCKS5 192.168.1.1:2080; DIRECT\";" >> "$PAC_FILE"
+    echo "        return \"SOCKS5 $ROUTER_IP:$PROXY_PORT; DIRECT\";" >> "$PAC_FILE"
     echo "    }" >> "$PAC_FILE"
 done
 

@@ -8,6 +8,10 @@
   ansible.builtin.import_tasks: network.yml
   tags: [network]
 
+- name: Import sysctl performance tuning tasks
+  ansible.builtin.import_tasks: sysctl.yml
+  tags: [sysctl, performance]
+
 - name: Import domains configuration tasks
   ansible.builtin.import_tasks: domains.yml
   tags: [domains]

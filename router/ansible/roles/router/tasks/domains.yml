@@ -8,18 +8,62 @@
     group: root
     mode: "0755"
 
-- name: Upload domain lists
+- name: Upload IPv4 domain lists
   ansible.builtin.copy:
     src: "{{ item.file }}"
-    dest: /etc/dnsmasq.d/{{ item.file }}
+    dest: /etc/dnsmasq.d/{{ item.name }}-ipv4.lst
     owner: root
     group: root
     mode: "0644"
     backup: false
-  loop: "{{ router_domains_lists }}"
+  loop: "{{ router_domains_lists_ipv4 }}"
   loop_control:
     label: "{{ item.name }}"
-  when: lookup('vars', 'router_domains_' + item.name, default=false)
+  when:
+    - item.name not in router_services_exclude
+    - lookup('vars', 'router_domains_' + item.name, default=false)
+  notify: Rebuild domains
+
+- name: Upload IPv6 domain lists
+  ansible.builtin.copy:
+    src: "{{ item.file }}"
+    dest: /etc/dnsmasq.d/{{ item.name }}-ipv6.lst
+    owner: root
+    group: root
+    mode: "0644"
+    backup: false
+  loop: "{{ router_domains_lists_ipv6 }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - router_ipv6_enabled | default(false)
+    - item.name not in router_services_exclude
+    - lookup('vars', 'router_domains_' + item.name, default=false)
+  notify: Rebuild domains
+
+- name: Remove excluded IPv4 domain lists
+  ansible.builtin.file:
+    path: /etc/dnsmasq.d/{{ item.name }}-ipv4.lst
+    state: absent
+  loop: "{{ router_domains_lists_ipv4 }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.name in router_services_exclude or not lookup('vars', 'router_domains_' + item.name, default=false)
+  notify: Rebuild domains
+
+- name: Remove excluded IPv6 domain lists
+  ansible.builtin.file:
+    path: /etc/dnsmasq.d/{{ item.name }}-ipv6.lst
+    state: absent
+  loop: "{{ router_domains_lists_ipv6 }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not (router_ipv6_enabled | default(false))
+      or item.name in router_services_exclude
+      or not lookup('vars', 'router_domains_' + item.name, default=false)
+  notify: Rebuild domains
 
 - name: Deploy getdomains script
   ansible.builtin.template:
@@ -29,16 +73,9 @@
     group: root
     mode: "0755"
     backup: false
+  notify: Rebuild domains
 
 - name: Enable getdomains autostart
   ansible.builtin.command:
     cmd: /etc/init.d/getdomains enable
   changed_when: false
-
-- name: Rebuild domains list
-  ansible.builtin.command:
-    cmd: /etc/init.d/getdomains start
-  changed_when: true
-  ignore_errors: true
-  notify:
-    - Reload firewall

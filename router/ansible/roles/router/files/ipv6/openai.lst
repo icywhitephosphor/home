@@ -1,0 +1,16 @@
+nftset=/.openai.com/6#inet#fw4#vpn_domains
+nftset=/openai.com/6#inet#fw4#vpn_domains
+nftset=/.chatgpt.com/6#inet#fw4#vpn_domains
+nftset=/chatgpt.com/6#inet#fw4#vpn_domains
+nftset=/.oaistatic.com/6#inet#fw4#vpn_domains
+nftset=/oaistatic.com/6#inet#fw4#vpn_domains
+nftset=/.oaiusercontent.com/6#inet#fw4#vpn_domains
+nftset=/oaiusercontent.com/6#inet#fw4#vpn_domains
+nftset=/openaicom.imgix.net/6#inet#fw4#vpn_domains
+nftset=/.openaicom.imgix.net/6#inet#fw4#vpn_domains
+nftset=/openaicomproductionae4b.blob.core.windows.net/6#inet#fw4#vpn_domains
+nftset=/.openaicomproductionae4b.blob.core.windows.net/6#inet#fw4#vpn_domains
+nftset=/production-openaicom-storage.azureedge.net/6#inet#fw4#vpn_domains
+nftset=/.production-openaicom-storage.azureedge.net/6#inet#fw4#vpn_domains
+nftset=/openaiapi-site.azureedge.net/6#inet#fw4#vpn_domains
+nftset=/.openaiapi-site.azureedge.net/6#inet#fw4#vpn_domains

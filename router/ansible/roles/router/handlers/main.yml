@@ -4,19 +4,37 @@
 - name: Reload dnsmasq
   ansible.builtin.command:
     cmd: /etc/init.d/dnsmasq reload
-  changed_when: true
+  changed_when: false
+  check_mode: false
 
 - name: Reload firewall
   ansible.builtin.command:
     cmd: /etc/init.d/firewall reload
-  changed_when: true
+  changed_when: false
+  check_mode: false
 
 - name: Restart sing-box
   ansible.builtin.command:
     cmd: /etc/init.d/sing-box restart
-  changed_when: true
+  changed_when: false
+  check_mode: false
+
+- name: Rebuild domains
+  ansible.builtin.command:
+    cmd: /etc/init.d/getdomains start
+  changed_when: false
+  check_mode: false
+  notify: Reload firewall
 
 - name: Commit and reload WiFi
-  ansible.builtin.command:
+  ansible.builtin.shell:
     cmd: uci commit wireless && wifi reload
-  changed_when: true
+  changed_when: false
+  check_mode: false
+
+- name: Apply sysctl settings
+  ansible.builtin.command:
+    cmd: sysctl -p /etc/sysctl.conf
+  changed_when: false
+  check_mode: false
+  failed_when: false

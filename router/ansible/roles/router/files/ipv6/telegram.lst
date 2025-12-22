@@ -1,0 +1,8 @@
+nftset=/.telegram.org/6#inet#fw4#vpn_domains
+nftset=/telegram.org/6#inet#fw4#vpn_domains
+nftset=/.telegram.me/6#inet#fw4#vpn_domains
+nftset=/telegram.me/6#inet#fw4#vpn_domains
+nftset=/.t.me/6#inet#fw4#vpn_domains
+nftset=/t.me/6#inet#fw4#vpn_domains
+nftset=/.telegra.ph/6#inet#fw4#vpn_domains
+nftset=/telegra.ph/6#inet#fw4#vpn_domains

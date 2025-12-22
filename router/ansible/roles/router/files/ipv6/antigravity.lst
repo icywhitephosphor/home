@@ -1,0 +1,48 @@
+# Google Antigravity IDE domains
+# Main domain
+nftset=/.antigravity.google/6#inet#fw4#vpn_domains
+nftset=/antigravity.google/6#inet#fw4#vpn_domains
+
+# Antigravity.com (from CSP *.antigravity.com)
+nftset=/.antigravity.com/6#inet#fw4#vpn_domains
+nftset=/antigravity.com/6#inet#fw4#vpn_domains
+
+# App hosting (from CSP headers)
+nftset=/.gweb-jetski.appspot.com/6#inet#fw4#vpn_domains
+nftset=/gweb-jetski.appspot.com/6#inet#fw4#vpn_domains
+nftset=/.gweb-jetski.uc.r.appspot.com/6#inet#fw4#vpn_domains
+nftset=/gweb-jetski.uc.r.appspot.com/6#inet#fw4#vpn_domains
+
+# Vertex AI (used for grounding/search)
+nftset=/.vertexaisearch.cloud.google.com/6#inet#fw4#vpn_domains
+nftset=/vertexaisearch.cloud.google.com/6#inet#fw4#vpn_domains
+nftset=/.vertexai.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/vertexai.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/.aiplatform.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/aiplatform.googleapis.com/6#inet#fw4#vpn_domains
+
+# Generative AI APIs
+nftset=/.generativelanguage.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/generativelanguage.googleapis.com/6#inet#fw4#vpn_domains
+
+# Firebase (commonly used by Google apps)
+nftset=/.firebaseapp.com/6#inet#fw4#vpn_domains
+nftset=/firebaseapp.com/6#inet#fw4#vpn_domains
+
+# Cloud Storage / CDN (for downloads)
+nftset=/.storage.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/storage.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/.dl.google.com/6#inet#fw4#vpn_domains
+nftset=/dl.google.com/6#inet#fw4#vpn_domains
+
+# OAuth / Auth
+nftset=/.accounts.google.com/6#inet#fw4#vpn_domains
+nftset=/accounts.google.com/6#inet#fw4#vpn_domains
+nftset=/.oauth2.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/oauth2.googleapis.com/6#inet#fw4#vpn_domains
+
+# Cloud APIs (general)
+nftset=/.cloudresourcemanager.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/cloudresourcemanager.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/.iamcredentials.googleapis.com/6#inet#fw4#vpn_domains
+nftset=/iamcredentials.googleapis.com/6#inet#fw4#vpn_domains

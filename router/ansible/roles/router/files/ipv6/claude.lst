@@ -1,0 +1,36 @@
+# Claude / Anthropic IPv4
+
+# Additional IPv4 endpoints
+
+# IPv6 (на будущее, не мешает)
+nftset=/.claude.ai/6#inet#fw4#vpn_domains
+nftset=/claude.ai/6#inet#fw4#vpn_domains
+nftset=/.www.claude.ai/6#inet#fw4#vpn_domains
+nftset=/www.claude.ai/6#inet#fw4#vpn_domains
+nftset=/.staging.claude.ai/6#inet#fw4#vpn_domains
+nftset=/staging.claude.ai/6#inet#fw4#vpn_domains
+nftset=/.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/anthropic.com/6#inet#fw4#vpn_domains
+nftset=/.api.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/api.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/.a-api.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/a-api.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/.console.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/console.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/.status.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/status.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/.claudeusercontent.com/6#inet#fw4#vpn_domains
+nftset=/claudeusercontent.com/6#inet#fw4#vpn_domains
+nftset=/.static-assets.claude.ai/6#inet#fw4#vpn_domains
+nftset=/static-assets.claude.ai/6#inet#fw4#vpn_domains
+nftset=/.assets.claude.ai/6#inet#fw4#vpn_domains
+nftset=/assets.claude.ai/6#inet#fw4#vpn_domains
+nftset=/.login.anthropic.com/6#inet#fw4#vpn_domains
+
+# Missing / CDN
+nftset=/.cdn.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/cdn.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/.feedback.anthropic.com/6#inet#fw4#vpn_domains
+nftset=/feedback.anthropic.com/6#inet#fw4#vpn_domains
+
+nftset=/login.anthropic.com/6#inet#fw4#vpn_domains

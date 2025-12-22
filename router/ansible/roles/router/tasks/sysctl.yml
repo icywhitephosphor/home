@@ -1,0 +1,11 @@
+---
+# Sysctl performance tuning tasks for OpenWrt
+- name: Deploy sysctl performance config
+  ansible.builtin.template:
+    src: sysctl.conf.j2
+    dest: /etc/sysctl.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: router_sysctl_enabled | default(true)
+  notify: Apply sysctl settings

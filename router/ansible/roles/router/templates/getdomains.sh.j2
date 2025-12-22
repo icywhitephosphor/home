@@ -5,12 +5,12 @@ START=99
 
 start () {
     # Всё храним в /etc/dnsmasq.d/ (persistent storage)
-    DOMAINS=https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-nfset.lst
+    DOMAINS="https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-nfset.lst"
     
     # Пытаемся скачать список (максимум 3 попытки)
     for i in 1 2 3; do
-        if curl -m 3 github.com >/dev/null 2>&1; then
-            if curl -f $DOMAINS --output /etc/dnsmasq.d/domains.lst; then
+        if curl -m 3 -fsI github.com >/dev/null 2>&1; then
+            if curl -f "$DOMAINS" --output /etc/dnsmasq.d/domains.lst; then
                 break
             fi
         fi
@@ -21,17 +21,30 @@ start () {
     # Если не скачалось и файла нет - создаем пустой
     [ ! -f /etc/dnsmasq.d/domains.lst ] && touch /etc/dnsmasq.d/domains.lst
 
-    sed -i '/kinovod/d' /etc/dnsmasq.d/domains.lst
+    {% if router_services_exclude is defined and router_services_exclude %}
+    # Filter out excluded services/patterns
+    {% for pattern in router_services_exclude %}
+    sed -i '/{{ pattern }}/d' /etc/dnsmasq.d/domains.lst
+    {% endfor %}
+    {% endif %}
 
     # Добавляем ВСЕ локальные .lst файлы (кроме самого domains.lst)
     for file in /etc/dnsmasq.d/*.lst; do
         # Пропускаем сам файл domains.lst чтобы не дублировать
         [ "$file" = "/etc/dnsmasq.d/domains.lst" ] && continue
+        # Пропускаем IPv6 списки, если IPv6 отключен
+        {% if not router_ipv6_enabled | default(false) %}
+        case "$file" in *-ipv6.lst) continue ;; esac
+        {% endif %}
         [ -f "$file" ] && cat "$file" >> /etc/dnsmasq.d/domains.lst
     done
 
     # Удаляем дубликаты
     sort -u /etc/dnsmasq.d/domains.lst -o /etc/dnsmasq.d/domains.lst
+
+    # Удаляем комментарии и пустые строки после сортировки
+    sed -i '/^#/d' /etc/dnsmasq.d/domains.lst
+    sed -i '/^$/d' /etc/dnsmasq.d/domains.lst
     
     # Перезапускаем dnsmasq
     /etc/init.d/dnsmasq restart
