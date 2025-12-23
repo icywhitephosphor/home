@@ -43,7 +43,7 @@ router_hw_offloading: true          # Hardware offloading (для MT7621/7622)
 # Domain Lists
 # ------------------------------------------------------------------------------
 # Управление списками доменов для VPN routing
-# Файлы лежат в roles/router/files/*.lst
+# Файлы лежат в roles/router/files/ipv4/*.lst и roles/router/files/ipv6/*.lst
 
 router_domains_copilot: true        # GitHub Copilot
 router_domains_openai: true         # ChatGPT, OpenAI API
