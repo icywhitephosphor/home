@@ -103,7 +103,7 @@ tail -f ~/Library/Logs/sing-box.log
 
 ## Добавление доменов
 
-Домены берутся из `roles/router/files/*.lst`. Чтобы включить/выключить:
+Домены берутся из `roles/router/files/ipv4/*.lst`. Чтобы включить/выключить:
 
 ```yaml
 # defaults/main.yml или group_vars

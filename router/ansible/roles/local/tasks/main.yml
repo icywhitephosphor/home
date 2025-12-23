@@ -22,20 +22,45 @@
     state: directory
     mode: "0755"
 
-# Build domain list from .lst files in roles/router/files/
+# Build enabled domains list from local_domains dict
+- name: Build enabled domains list
+  ansible.builtin.set_fact:
+    local_enabled_domains: >-
+      {{
+        local_domains_lists
+        | select('in', (local_domains | dict2items | selectattr('value', 'equalto', true) | map(attribute='key') | list))
+        | reject('in', local_services_exclude | default([]))
+        | list
+      }}
+
+- name: Debug enabled domains
+  ansible.builtin.debug:
+    var: local_enabled_domains
+  when: ansible_verbosity > 0
+
+# Build domain list from .lst files in roles/router/files/ipv4/
+- name: Initialize domains parsed list
+  ansible.builtin.set_fact:
+    local_domains_parsed: []
+
 - name: Parse enabled domain lists
   ansible.builtin.set_fact:
     local_domains_parsed: >-
       {{
-        local_domains_parsed | default([]) +
-        (lookup('file', playbook_dir + '/roles/router/files/' + item + '.lst', errors='ignore') | default(''))
+        local_domains_parsed +
+        (lookup('file', playbook_dir + '/../roles/router/files/ipv4/' + item + '.lst', errors='ignore') | default(''))
         | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
       }}
   loop: "{{ local_enabled_domains }}"
 
 - name: Deduplicate domain list
   ansible.builtin.set_fact:
-    local_routing_domains: "{{ local_domains_parsed | unique | sort }}"
+    local_routing_domains: "{{ local_domains_parsed | flatten | unique | sort }}"
+
+- name: Debug routing domains count
+  ansible.builtin.debug:
+    msg: "Found {{ local_routing_domains | length }} unique domains"
+  when: ansible_verbosity > 0
 
 - name: Generate PAC file
   when: local_pac_enabled | default(true)
@@ -89,6 +114,9 @@
       PAC:    {{ local_pac_path }}
       Mode:   {{ local_singbox_mode }}
       Proxy:  127.0.0.1:{{ local_proxy_http_port }}
+      
+      Enabled domains: {{ local_enabled_domains | join(', ') }}
+      Total unique domains: {{ local_routing_domains | length }}
       
       {% if local_runtime == 'binary' %}
       To start manually: {{ local_binary_run_script }}

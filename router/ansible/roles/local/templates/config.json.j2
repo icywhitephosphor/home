@@ -6,35 +6,27 @@
   },
   "dns": {
     "servers": [
+{% for dns in local_singbox_dns_servers %}
       {
-        "tag": "bootstrap",
-        "type": "udp",
-        "server": "8.8.8.8"
-      },
-      {
-        "tag": "google-doh",
-        "type": "https",
-        "server": "dns.google",
-        "server_port": 443,
-        "domain_resolver": "bootstrap"
-      },
-      {
-        "tag": "cloudflare-doh",
-        "type": "https",
-        "server": "cloudflare-dns.com",
-        "server_port": 443,
-        "domain_resolver": "bootstrap"
-      }
+        "tag": "{{ dns.tag }}",
+        "type": "{{ dns.type }}"{% if dns.server is defined %},
+        "server": "{{ dns.server }}"{% endif %}{% if dns.server_port is defined %},
+        "server_port": {{ dns.server_port }}{% endif %}{% if dns.domain_resolver is defined %},
+        "domain_resolver": "{{ dns.domain_resolver }}"{% endif %}
+
+      }{% if not loop.last %},{% endif %}
+
+{% endfor %}
     ],
     "rules": [
 {% if local_routing_domains | default([]) | length > 0 %}
       {
         "domain_suffix": {{ local_routing_domains | to_json }},
-        "server": "google-doh"
+        "server": "{{ local_singbox_dns_servers[1].tag }}"
       }
 {% endif %}
     ],
-    "final": "cloudflare-doh"
+    "final": "{{ (local_singbox_dns_servers | last).tag }}"
   },
   "inbounds": [
 {% if local_singbox_mode == 'proxy' %}
@@ -67,8 +59,8 @@
       "type": "{{ local_singbox_outbound.type }}",
       "server": "{{ local_singbox_outbound.server }}",
       "server_port": {{ local_singbox_outbound.server_port }},
-      "uuid": "{{ local_singbox_outbound.uuid }}",
-      "flow": "{{ local_singbox_outbound.flow }}",
+      "uuid": "{{ local_singbox_outbound.uuid }}"{% if local_singbox_outbound.flow %},
+      "flow": "{{ local_singbox_outbound.flow }}"{% endif %},
       "tls": {
         "enabled": {{ local_singbox_outbound.tls.enabled | lower }},
         "insecure": {{ local_singbox_outbound.tls.insecure | lower }},
@@ -77,14 +69,13 @@
         "utls": {
           "enabled": {{ local_singbox_outbound.utls.enabled | lower }},
           "fingerprint": "{{ local_singbox_outbound.utls.fingerprint }}"
-        }
-{% if local_singbox_outbound.reality.enabled %}
-        ,"reality": {
+        }{% if local_singbox_outbound.reality.enabled %},
+        "reality": {
           "enabled": true,
           "public_key": "{{ local_singbox_outbound.reality.public_key }}",
           "short_id": "{{ local_singbox_outbound.reality.short_id }}"
-        }
-{% endif %}
+        }{% endif %}
+
       }
     },
     {
@@ -93,7 +84,7 @@
     }
   ],
   "route": {
-    "default_domain_resolver": "google-doh",
+    "default_domain_resolver": "{{ local_singbox_dns_servers[1].tag }}",
     "rules": [
       {
         "protocol": "dns",

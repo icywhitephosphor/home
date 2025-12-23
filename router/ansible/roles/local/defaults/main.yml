@@ -41,22 +41,38 @@ local_log_file: >-
   }}
 
 # ============================================================================
-# Domain Lists
+# Domain Lists (synchronized with router role)
 # ============================================================================
 
-# Включённые списки доменов (имена файлов без расширения из roles/router/files/)
-local_enabled_domains:
-  - openai
+# Список всех доступных доменов (должен совпадать с router_domains_lists)
+local_domains_lists:
   - copilot
+  - openai
   - google
-  - claude
   - datadog
   - instagram
   - netflix
+  - telegram
+  - claude
   - x
   - linkedin
   - windsurf
-  # - telegram  # раскомментировать при необходимости
+  - antigravity
+
+# Включение/выключение доменов (аналогично router_domains)
+local_domains:
+  copilot: true
+  openai: true
+  google: true
+  datadog: true
+  instagram: true
+  netflix: true
+  telegram: false
+  claude: true
+  x: true
+  linkedin: true
+  windsurf: true
+  antigravity: true
 
 # ============================================================================
 # PAC File Configuration
@@ -69,12 +85,33 @@ local_pac_validate_certs: true
 local_pac_extra_sources:
   - "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-ipset.lst"
 
+# Services to exclude from PAC (patterns in downloaded list)
+local_services_exclude:
+  - kinovod
+  - telegram
+
 # ============================================================================
 # sing-box Configuration
 # ============================================================================
 
 # Log level: trace, debug, info, warn, error, fatal, panic
 local_singbox_log_level: info
+
+# DNS servers for sing-box (routed through VPN)
+local_singbox_dns_servers:
+  - tag: bootstrap
+    type: udp
+    server: "8.8.8.8"
+  - tag: google-doh
+    type: https
+    server: dns.google
+    server_port: 443
+    domain_resolver: bootstrap
+  - tag: cloudflare-doh
+    type: https
+    server: cloudflare-dns.com
+    server_port: 443
+    domain_resolver: bootstrap
 
 # TUN Configuration (только для mode: tun)
 local_singbox_tun:
@@ -95,9 +132,9 @@ local_singbox_outbound:
   tag: vpn-out
   type: vless
   server: ""           # REQUIRED in group_vars
-  server_port: 443
+  server_port: 8443
   uuid: ""             # REQUIRED in group_vars
-  flow: xtls-rprx-vision
+  flow: xtls-rprx-vision  # Optional, can be empty string to disable
 
   tls:
     enabled: true
