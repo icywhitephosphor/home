@@ -33,4 +33,6 @@ nftset=/.cdn.anthropic.com/4#inet#fw4#vpn_domains
 nftset=/cdn.anthropic.com/4#inet#fw4#vpn_domains
 nftset=/.feedback.anthropic.com/4#inet#fw4#vpn_domains
 nftset=/feedback.anthropic.com/4#inet#fw4#vpn_domains
+nftset=/.headers.anthropic.com/4#inet#fw4#vpn_domains
+nftset=/headers.anthropic.com/4#inet#fw4#vpn_domains
 

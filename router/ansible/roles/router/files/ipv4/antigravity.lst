@@ -46,3 +46,19 @@ nftset=/.cloudresourcemanager.googleapis.com/4#inet#fw4#vpn_domains
 nftset=/cloudresourcemanager.googleapis.com/4#inet#fw4#vpn_domains
 nftset=/.iamcredentials.googleapis.com/4#inet#fw4#vpn_domains
 nftset=/iamcredentials.googleapis.com/4#inet#fw4#vpn_domains
+
+# Missing Critical Domains (clients6, AI Studio, etc.)
+nftset=/.clients6.google.com/4#inet#fw4#vpn_domains
+nftset=/clients6.google.com/4#inet#fw4#vpn_domains
+nftset=/.aistudio.google.com/4#inet#fw4#vpn_domains
+nftset=/aistudio.google.com/4#inet#fw4#vpn_domains
+nftset=/.api.googleaistudio.com/4#inet#fw4#vpn_domains
+nftset=/api.googleaistudio.com/4#inet#fw4#vpn_domains
+nftset=/.makersuite.google.com/4#inet#fw4#vpn_domains
+nftset=/makersuite.google.com/4#inet#fw4#vpn_domains
+nftset=/.notebooklm.google/4#inet#fw4#vpn_domains
+nftset=/notebooklm.google/4#inet#fw4#vpn_domains
+nftset=/.notebooklm.google.com/4#inet#fw4#vpn_domains
+nftset=/notebooklm.google.com/4#inet#fw4#vpn_domains
+nftset=/.firebase.com/4#inet#fw4#vpn_domains
+nftset=/firebase.com/4#inet#fw4#vpn_domains
