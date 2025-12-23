@@ -1,5 +1,6 @@
 ---
 # Domains configuration tasks
+
 - name: Ensure dnsmasq.d directory exists
   ansible.builtin.file:
     path: /etc/dnsmasq.d
@@ -10,59 +11,59 @@
 
 - name: Upload IPv4 domain lists
   ansible.builtin.copy:
-    src: "{{ item.file }}"
-    dest: /etc/dnsmasq.d/{{ item.name }}-ipv4.lst
+    src: "ipv4/{{ item }}.lst"
+    dest: "/etc/dnsmasq.d/{{ item }}-ipv4.lst"
     owner: root
     group: root
     mode: "0644"
     backup: false
-  loop: "{{ router_domains_lists_ipv4 }}"
+  loop: "{{ router_domains_lists }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item }}"
   when:
-    - item.name not in router_services_exclude
-    - lookup('vars', 'router_domains_' + item.name, default=false)
+    - item not in router_services_exclude
+    - router_domains[item] | default(false)
   notify: Rebuild domains
 
 - name: Upload IPv6 domain lists
   ansible.builtin.copy:
-    src: "{{ item.file }}"
-    dest: /etc/dnsmasq.d/{{ item.name }}-ipv6.lst
+    src: "ipv6/{{ item }}.lst"
+    dest: "/etc/dnsmasq.d/{{ item }}-ipv6.lst"
     owner: root
     group: root
     mode: "0644"
     backup: false
-  loop: "{{ router_domains_lists_ipv6 }}"
+  loop: "{{ router_domains_lists }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item }}"
   when:
     - router_ipv6_enabled | default(false)
-    - item.name not in router_services_exclude
-    - lookup('vars', 'router_domains_' + item.name, default=false)
+    - item not in router_services_exclude
+    - router_domains[item] | default(false)
   notify: Rebuild domains
 
-- name: Remove excluded IPv4 domain lists
+- name: Remove disabled IPv4 domain lists
   ansible.builtin.file:
-    path: /etc/dnsmasq.d/{{ item.name }}-ipv4.lst
+    path: "/etc/dnsmasq.d/{{ item }}-ipv4.lst"
     state: absent
-  loop: "{{ router_domains_lists_ipv4 }}"
+  loop: "{{ router_domains_lists }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item }}"
   when:
-    - item.name in router_services_exclude or not lookup('vars', 'router_domains_' + item.name, default=false)
+    - item in router_services_exclude or not (router_domains[item] | default(false))
   notify: Rebuild domains
 
-- name: Remove excluded IPv6 domain lists
+- name: Remove disabled IPv6 domain lists
   ansible.builtin.file:
-    path: /etc/dnsmasq.d/{{ item.name }}-ipv6.lst
+    path: "/etc/dnsmasq.d/{{ item }}-ipv6.lst"
     state: absent
-  loop: "{{ router_domains_lists_ipv6 }}"
+  loop: "{{ router_domains_lists }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item }}"
   when:
     - not (router_ipv6_enabled | default(false))
-      or item.name in router_services_exclude
-      or not lookup('vars', 'router_domains_' + item.name, default=false)
+      or item in router_services_exclude
+      or not (router_domains[item] | default(false))
   notify: Rebuild domains
 
 - name: Deploy getdomains script

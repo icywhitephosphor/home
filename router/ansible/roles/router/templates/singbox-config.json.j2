@@ -4,14 +4,17 @@
   },
   "dns": {
     "servers": [
+{% for dns in router_singbox_dns_servers %}
       {
-        "tag": "vpn-dns",
-        "address": "tls://8.8.8.8",
+        "tag": "{{ dns.tag }}",
+        "address": "{{ dns.address }}",
         "detour": "{{ router_singbox_outbound.tag }}"
-      }
+      }{% if not loop.last %},{% endif %}
+
+{% endfor %}
     ],
     "strategy": "{% if router_ipv6_enabled %}prefer_ipv4{% else %}ipv4_only{% endif %}",
-    "final": "vpn-dns"
+    "final": "{{ router_singbox_dns_servers[0].tag }}"
   },
   "inbounds": [
     {
@@ -53,8 +56,8 @@
       "type": "{{ router_singbox_outbound.type }}",
       "server": "{{ router_singbox_outbound.server }}",
       "server_port": {{ router_singbox_outbound.server_port }},
-      "uuid": "{{ router_singbox_outbound.uuid }}",
-      "flow": "{{ router_singbox_outbound.flow }}",
+      "uuid": "{{ router_singbox_outbound.uuid }}"{% if router_singbox_outbound.flow %},
+      "flow": "{{ router_singbox_outbound.flow }}"{% endif %},
       "tls": {
         "enabled": {{ router_singbox_outbound.tls.enabled | lower }},
         "insecure": {{ router_singbox_outbound.tls.insecure | lower }},
@@ -68,6 +71,7 @@
           "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
           "public_key": "{{ router_singbox_outbound.reality.public_key }}",
           "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
+
         }
       }
     },
@@ -76,8 +80,8 @@
       "type": "{{ router_singbox_outbound.type }}",
       "server": "{{ router_singbox_outbound.server_ipv6 }}",
       "server_port": {{ router_singbox_outbound.server_port }},
-      "uuid": "{{ router_singbox_outbound.uuid }}",
-      "flow": "{{ router_singbox_outbound.flow }}",
+      "uuid": "{{ router_singbox_outbound.uuid }}"{% if router_singbox_outbound.flow %},
+      "flow": "{{ router_singbox_outbound.flow }}"{% endif %},
       "tls": {
         "enabled": {{ router_singbox_outbound.tls.enabled | lower }},
         "insecure": {{ router_singbox_outbound.tls.insecure | lower }},
@@ -91,6 +95,7 @@
           "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
           "public_key": "{{ router_singbox_outbound.reality.public_key }}",
           "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
+
         }
       }
     }
@@ -100,8 +105,8 @@
       "type": "{{ router_singbox_outbound.type }}",
       "server": "{{ router_singbox_outbound.server }}",
       "server_port": {{ router_singbox_outbound.server_port }},
-      "uuid": "{{ router_singbox_outbound.uuid }}",
-      "flow": "{{ router_singbox_outbound.flow }}",
+      "uuid": "{{ router_singbox_outbound.uuid }}"{% if router_singbox_outbound.flow %},
+      "flow": "{{ router_singbox_outbound.flow }}"{% endif %},
       "tls": {
         "enabled": {{ router_singbox_outbound.tls.enabled | lower }},
         "insecure": {{ router_singbox_outbound.tls.insecure | lower }},
@@ -115,6 +120,7 @@
           "enabled": {{ router_singbox_outbound.reality.enabled | lower }}{% if router_singbox_outbound.reality.enabled %},
           "public_key": "{{ router_singbox_outbound.reality.public_key }}",
           "short_id": "{{ router_singbox_outbound.reality.short_id }}"{% endif %}
+
         }
       }
     }

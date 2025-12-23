@@ -13,46 +13,57 @@ router_proxy_enabled: false
 router_proxy_port: 2080
 
 # 2G Network Configuration
+# NOTE: Requires separate network zone for 2G WiFi (not implemented yet)
 router_2g_without_vpn: false
 
 # Performance - Packet Steering (RPS/XPS)
 router_packet_steering: true
 
-# Domain Lists - простое управление через true/false
-# Services that should be excluded (overrides enabled status)
+# Domain Lists - единый список, IPv6 контролируется через router_ipv6_enabled
+# Файлы автоматически ищутся по пути: files/ipv4/<name>.lst и files/ipv6/<name>.lst
+# Для включения: router_domains.<name>: true
+router_domains_lists:
+  - copilot
+  - openai
+  - google
+  - datadog
+  - instagram
+  - netflix
+  - telegram
+  - claude
+  - x
+  - linkedin
+  - windsurf
+  - antigravity
+
+# Services to exclude from VPN routing (patterns matched in downloaded list)
 router_services_exclude: []
 
-router_domains_lists_ipv4:
-  - { name: copilot, file: ipv4/copilot.lst }
-  - { name: openai, file: ipv4/openai.lst }
-  - { name: google, file: ipv4/google.lst }
-  - { name: datadog, file: ipv4/datadog.lst }
-  - { name: instagram, file: ipv4/instagram.lst }
-  - { name: netflix, file: ipv4/netflix.lst }
-  - { name: telegram, file: ipv4/telegram.lst }
-  - { name: claude, file: ipv4/claude.lst }
-  - { name: x, file: ipv4/x.lst }
-  - { name: linkedin, file: ipv4/linkedin.lst }
-  - { name: windsurf, file: ipv4/windsurf.lst }
-  - { name: antigravity, file: ipv4/antigravity.lst }
-
-router_domains_lists_ipv6:
-  - { name: copilot, file: ipv6/copilot.lst }
-  - { name: openai, file: ipv6/openai.lst }
-  - { name: google, file: ipv6/google.lst }
-  - { name: datadog, file: ipv6/datadog.lst }
-  - { name: instagram, file: ipv6/instagram.lst }
-  - { name: netflix, file: ipv6/netflix.lst }
-  - { name: telegram, file: ipv6/telegram.lst }
-  - { name: claude, file: ipv6/claude.lst }
-  - { name: x, file: ipv6/x.lst }
-  - { name: linkedin, file: ipv6/linkedin.lst }
-  - { name: windsurf, file: ipv6/windsurf.lst }
-  - { name: antigravity, file: ipv6/antigravity.lst }
+# Domain toggles - все false по умолчанию, переопределяются в group_vars
+router_domains:
+  copilot: false
+  openai: false
+  google: false
+  datadog: false
+  instagram: false
+  netflix: false
+  telegram: false
+  claude: false
+  x: false
+  linkedin: false
+  windsurf: false
+  antigravity: false
 
 # Sing-box Configuration
 # Log level: trace, debug, info, warn, error, fatal, panic
 router_singbox_log_level: error
+
+# DNS servers for sing-box (routed through VPN)
+router_singbox_dns_servers:
+  - address: "tls://8.8.8.8"
+    tag: "google-dns"
+  - address: "tls://1.1.1.1"
+    tag: "cloudflare-dns"
 
 # TUN Inbound Configuration
 router_singbox_inbound:

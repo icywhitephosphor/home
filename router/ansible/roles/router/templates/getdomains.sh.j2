@@ -7,6 +7,21 @@ start () {
     # Всё храним в /etc/dnsmasq.d/ (persistent storage)
     DOMAINS="https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-nfset.lst"
     
+    # Настраиваем маршрутизацию VPN (таблица vpn = 99)
+    # Ждём пока появится интерфейс tun0 (sing-box должен быть запущен)
+    for i in 1 2 3 4 5; do
+        if ip link show tun0 >/dev/null 2>&1; then
+            # Убираем старый маршрут если есть
+            ip route del default table vpn 2>/dev/null
+            # Добавляем маршрут через tun0
+            ip route add default dev tun0 table vpn
+            echo "VPN route configured via tun0"
+            break
+        fi
+        echo "Waiting for tun0 interface... ($i/5)"
+        sleep 2
+    done
+    
     # Пытаемся скачать список (максимум 3 попытки)
     for i in 1 2 3; do
         if curl -m 3 -fsI github.com >/dev/null 2>&1; then
