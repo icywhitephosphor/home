@@ -4,9 +4,5 @@
   connection: local
   become: false
   gather_facts: true
-
-  vars_files:
-    - ../envs/local/group_vars/local.yml
-
   roles:
-    - local
+    - role: local
