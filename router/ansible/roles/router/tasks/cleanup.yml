@@ -1,5 +1,16 @@
 ---
-# Cleanup tasks to remove Ansible backup files
+# Cleanup tasks
+
+# Remove legacy domain lists (without -ipv4/-ipv6 suffix)
+- name: Remove legacy domain list files (old format)
+  ansible.builtin.file:
+    path: "/etc/dnsmasq.d/{{ item }}.lst"
+    state: absent
+  loop: "{{ router_domains_lists }}"
+  loop_control:
+    label: "{{ item }}.lst"
+  notify: Rebuild domains
+
 - name: Find Ansible backup files in /etc/init.d
   ansible.builtin.find:
     paths: /etc/init.d

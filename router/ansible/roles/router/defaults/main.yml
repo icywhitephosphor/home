@@ -6,7 +6,7 @@ router_ipv6_enabled: false
 router_network_lan_ipaddr: "192.168.1.1"
 router_network_lan_netmask: "255.255.255.0"
 router_network_wan_proto: "dhcp"
-router_network_wan_mac: ""  # Must be set in group_vars! Get from router: cat /sys/class/net/wan/address
+router_network_wan_mac: "" # Must be set in group_vars! Get from router: cat /sys/class/net/wan/address
 
 # Proxy Configuration
 router_proxy_enabled: false
@@ -82,14 +82,15 @@ router_singbox_inbound:
 router_singbox_route:
   auto_detect_interface: true # Auto-detect default interface
 
-# VLESS Outbound - полная структура с дефолтами
-# В group_vars переопределяются только реальные значения (server, uuid, keys)
-router_singbox_outbound:
+# VPN Servers list for urltest (REQUIRED in group_vars)
+router_singbox_servers: []
+
+# VLESS Outbound - общие настройки для всех серверов
+# В group_vars переопределяются только реальные значения
+router_singbox_outbound_common:
   tag: vpn-out # Outbound tag
   type: vless # Protocol type
-  server: "" # VPN server address (REQUIRED in group_vars)
   server_port: 443 # VPN server port
-  uuid: "" # VLESS user ID (REQUIRED in group_vars)
   flow: xtls-rprx-vision # VLESS flow: xtls-rprx-vision or empty
 
   # TLS Configuration
@@ -120,14 +121,14 @@ router_wifi_ifaces: []
 
 # Performance - Sysctl Tuning
 router_sysctl_enabled: true
-router_sysctl_rmem_max: 16777216          # TCP receive buffer max (16MB)
-router_sysctl_wmem_max: 16777216          # TCP send buffer max (16MB)
-router_sysctl_rmem_default: 1048576       # TCP receive buffer default (1MB)
-router_sysctl_wmem_default: 1048576       # TCP send buffer default (1MB)
-router_sysctl_tcp_rmem: "4096 1048576 16777216"  # TCP receive buffer (min default max)
-router_sysctl_tcp_wmem: "4096 1048576 16777216"  # TCP send buffer (min default max)
-router_sysctl_netdev_max_backlog: 5000    # Network device backlog queue
-router_sysctl_mtu_probing: 1              # Enable MTU probing (0=off, 1=on)
+router_sysctl_rmem_max: 16777216 # TCP receive buffer max (16MB)
+router_sysctl_wmem_max: 16777216 # TCP send buffer max (16MB)
+router_sysctl_rmem_default: 1048576 # TCP receive buffer default (1MB)
+router_sysctl_wmem_default: 1048576 # TCP send buffer default (1MB)
+router_sysctl_tcp_rmem: "4096 1048576 16777216" # TCP receive buffer (min default max)
+router_sysctl_tcp_wmem: "4096 1048576 16777216" # TCP send buffer (min default max)
+router_sysctl_netdev_max_backlog: 5000 # Network device backlog queue
+router_sysctl_mtu_probing: 1 # Enable MTU probing (0=off, 1=on)
 
 # Performance - irqbalance
 router_irqbalance_enabled: true

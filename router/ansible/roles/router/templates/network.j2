@@ -66,6 +66,7 @@ config route 'vpn_fallback'
 	option interface 'wan'
 	option target '0.0.0.0/0'
 	option table 'vpn'
+	option metric '1000'
 
 config rule
 	option name 'mark0x1'

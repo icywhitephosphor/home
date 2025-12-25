@@ -1,0 +1,8 @@
+#!/bin/sh
+# {{ ansible_managed }}
+
+[ "$ACTION" = "add" ] && [ "$INTERFACE" = "tun0" ] && {
+logger -t vpn-route "Restoring VPN route for tun0"
+ip route del default table vpn metric 10 2>/dev/null
+ip route add default dev tun0 table vpn metric 10
+}

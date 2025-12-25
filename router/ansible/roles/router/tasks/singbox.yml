@@ -39,3 +39,18 @@
     cmd: /etc/init.d/sing-box enable
   when: router_singbox_autostart.matched == 0
   changed_when: true
+
+- name: Deploy VPN route hotplug script
+  ansible.builtin.template:
+    src: 99-vpn-route.j2
+    dest: /etc/hotplug.d/net/99-vpn-route
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remove old hotplug script from wrong directory
+  ansible.builtin.file:
+    path: /etc/hotplug.d/iface/99-vpn-route
+    state: absent
+
+
