@@ -2,44 +2,24 @@
 # defaults file for local role (macOS sing-box)
 
 # ============================================================================
-# Runtime Configuration
+# Paths
 # ============================================================================
 
-# Режим запуска sing-box:
-#   - binary   : установка через Homebrew + скрипт для ручного запуска
-#   - brew     : управление через `brew services`
-#   - launchd  : macOS LaunchAgent (автозапуск)
-#   - docker   : контейнер (только proxy mode)
-local_runtime: binary
-
-# Режим работы: proxy (рекомендуется) или tun
-local_singbox_mode: proxy
-
-# IPv6 support (включает парсинг IPv6 списков)
-local_ipv6_enabled: false
+local_config_dir: "{{ ansible_env.HOME }}/.config/sing-box"
+local_pac_path: "{{ local_config_dir }}/proxy.pac"
+local_run_script: "{{ local_config_dir }}/run-sing-box.sh"
 
 # ============================================================================
 # Network Configuration
 # ============================================================================
 
-# Порты для proxy mode
-local_proxy_http_port: 2080
-local_proxy_socks_port: 2081
-
-# ============================================================================
-# Paths
-# ============================================================================
-
-local_config_dir: "{{ ansible_env.HOME }}/.config/sing-box"
-local_brew_config_path: "/opt/homebrew/etc/sing-box/config.json"
-local_binary_run_script: "{{ local_config_dir }}/run-sing-box.sh"
-local_pac_path: "{{ local_config_dir }}/proxy.pac"
+local_proxy_port: 2080
+local_ipv6_enabled: false
 
 # ============================================================================
 # Domain Lists (synchronized with router role)
 # ============================================================================
 
-# Список всех доступных доменов (должен совпадать с router_domains_lists)
 local_domains_lists:
   - antigravity
   - claude
@@ -54,10 +34,10 @@ local_domains_lists:
   - windsurf
   - x
 
-# Services to exclude from VPN routing (patterns matched in downloaded list)
+# Services to exclude from VPN routing
 local_services_exclude: []
 
-# Включение/выключение доменов (по умолчанию все выключены - включать в group_vars)
+# Включение/выключение доменов (по умолчанию все выключены)
 local_domains:
   antigravity: false
   claude: false
@@ -90,10 +70,8 @@ local_pac_extra_sources:
 # sing-box Configuration
 # ============================================================================
 
-# Log level: trace, debug, info, warn, error, fatal, panic
 local_singbox_log_level: info
 
-# DNS servers for sing-box
 local_singbox_dns_servers:
   - tag: bootstrap
     type: udp
@@ -103,21 +81,6 @@ local_singbox_dns_servers:
     server: dns.google
     server_port: 443
     domain_resolver: bootstrap
-  - tag: cloudflare-doh
-    type: https
-    server: cloudflare-dns.com
-    server_port: 443
-    domain_resolver: bootstrap
-
-# TUN Configuration (только для mode: tun)
-local_singbox_tun:
-  interface_name: utun99
-  address:
-    - "172.16.250.1/30"
-  mtu: 9000
-  auto_route: true
-  strict_route: false
-  stack: system
 
 # ============================================================================
 # VLESS Outbound Configuration
@@ -126,30 +89,19 @@ local_singbox_tun:
 # Список VPN серверов (ОБЯЗАТЕЛЬНО в group_vars)
 local_singbox_servers: []
 
-# Общие настройки для всех серверов (переопределять в group_vars)
+# Общие настройки для всех серверов
 local_singbox_outbound_common:
   tag: vpn-out
   type: vless
   server_port: 443
   flow: xtls-rprx-vision
-
   tls:
     enabled: true
     insecure: false
     server_name: ""
     disable_sni: false
-
   utls:
     enabled: true
     fingerprint: chrome
-
   reality:
     enabled: false
-
-# ============================================================================
-# Docker Configuration (for local_runtime: docker)
-# ============================================================================
-
-local_docker_image: "ghcr.io/sagernet/sing-box:latest"
-local_docker_container_name: "sing-box"
-local_docker_restart_policy: "unless-stopped"

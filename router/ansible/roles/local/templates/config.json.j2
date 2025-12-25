@@ -23,32 +23,17 @@
 {% endfor %}
     ],
     "strategy": "{% if local_ipv6_enabled | default(false) %}prefer_ipv4{% else %}ipv4_only{% endif %}",
-    "final": "{{ local_singbox_dns_servers[1].tag }}"
+    "final": "{{ local_singbox_dns_servers[-1].tag }}"
   },
   "inbounds": [
-{% if local_singbox_mode == 'proxy' %}
     {
       "type": "mixed",
       "tag": "mixed-in",
       "listen": "127.0.0.1",
-      "listen_port": {{ local_proxy_http_port }},
+      "listen_port": {{ local_proxy_port }},
       "sniff": true,
       "sniff_override_destination": true
     }
-{% else %}
-    {
-      "type": "tun",
-      "tag": "tun-in",
-      "interface_name": "{{ local_singbox_tun.interface_name }}",
-      "address": {{ local_singbox_tun.address | to_json }},
-      "mtu": {{ local_singbox_tun.mtu }},
-      "auto_route": {{ local_singbox_tun.auto_route | lower }},
-      "strict_route": {{ local_singbox_tun.strict_route | lower }},
-      "stack": "{{ local_singbox_tun.stack }}",
-      "sniff": true,
-      "sniff_override_destination": true
-    }
-{% endif %}
   ],
   "outbounds": [
     {
@@ -118,7 +103,7 @@
 {% endfor %}
   ],
   "route": {
-    "default_domain_resolver": "{{ local_singbox_dns_servers[1].tag }}",
+    "default_domain_resolver": "{{ local_singbox_dns_servers[-1].tag }}",
     "final": "{{ local_singbox_outbound_common.tag }}",
     "auto_detect_interface": true
   }

@@ -1,4 +1,4 @@
-// {{ ansible_managed }}
+// Ansible managed
 // PAC (Proxy Auto-Configuration) for sing-box
 // Generated: {{ ansible_date_time.iso8601 }}
 // Domains: {{ pac_domains | length }}
@@ -22,12 +22,12 @@ function FindProxyForURL(url, host) {
         return "DIRECT";
     }
 
-    // VPN domains - use Set for O(1) lookup
+    // VPN domains
     var vpnDomains = new Set({{ pac_domains | to_json }});
 
     // Check exact match
     if (vpnDomains.has(host)) {
-        return "PROXY 127.0.0.1:{{ local_proxy_http_port }}; DIRECT";
+        return "PROXY 127.0.0.1:{{ local_proxy_port }}; DIRECT";
     }
 
     // Check parent domains (e.g., api.openai.com -> openai.com)
@@ -35,7 +35,7 @@ function FindProxyForURL(url, host) {
     for (var i = 1; i < parts.length - 1; i++) {
         var parent = parts.slice(i).join('.');
         if (vpnDomains.has(parent)) {
-            return "PROXY 127.0.0.1:{{ local_proxy_http_port }}; DIRECT";
+            return "PROXY 127.0.0.1:{{ local_proxy_port }}; DIRECT";
         }
     }
 

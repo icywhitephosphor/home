@@ -4,26 +4,26 @@
 - name: Validate macOS
   ansible.builtin.assert:
     that:
-      - ansible_os_family == "Darwin"
-    fail_msg: "This role is only for macOS"
+      - ansible_facts['os_family'] == "Darwin"
+    fail_msg: "This role only supports macOS"
 
-- name: Validate runtime selection
-  ansible.builtin.assert:
-    that:
-      - local_runtime in ['launchd', 'docker', 'brew', 'binary']
-      - local_runtime != 'docker' or local_singbox_mode == 'proxy'
-    fail_msg: >-
-      Invalid runtime '{{ local_runtime }}'. Use: launchd, docker, brew, or binary.
-      Docker runtime supports only proxy mode.
+- name: Check Homebrew installed
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/brew
+  register: _homebrew_check
 
-- name: Validate VPN secrets
+- name: Fail if Homebrew not installed
+  ansible.builtin.fail:
+    msg: |
+      Homebrew is not installed. Install it first:
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  when: not _homebrew_check.stat.exists
+
+- name: Validate VPN servers configured
   ansible.builtin.assert:
     that:
       - local_singbox_servers | length > 0
-      - local_singbox_outbound_common.tls.server_name | length > 0
-    fail_msg: >-
-      VPN secrets missing. Copy and fill:
-      cp envs/local/group_vars/vpn_secrets.yml.example envs/local/group_vars/vpn_secrets.yml
+    fail_msg: "VPN servers not configured in localhost.yml"
 
 - name: Create config directory
   ansible.builtin.file:
@@ -31,7 +31,7 @@
     state: directory
     mode: "0755"
 
-# Parse domain lists from router role files
+# Parse domain lists from router role
 - name: Parse domain lists
   ansible.builtin.include_tasks: domains.yml
 
@@ -40,75 +40,56 @@
   ansible.builtin.include_tasks: pac.yml
   when: local_pac_enabled | default(true)
 
-# Generate sing-box configuration
+# Generate sing-box config
 - name: Generate sing-box configuration
   ansible.builtin.template:
     src: config.json.j2
     dest: "{{ local_config_dir }}/config.json"
     mode: "0600"
     backup: true
-  register: _local_config_changed
-  notify: "{{ _notify_handlers }}"
-  vars:
-    _notify_handlers: >-
-      {{
-        {
-          'docker': ['Restart sing-box (docker)'],
-          'launchd': ['Restart sing-box (launchd)'],
-          'brew': ['Restart sing-box (brew)']
-        }.get(local_runtime, [])
-      }}
+  register: _config_changed
 
 - name: Validate sing-box configuration
   ansible.builtin.command:
-    cmd: sing-box check -c {{ local_config_dir }}/config.json
+    cmd: /opt/homebrew/bin/sing-box check -c "{{ local_config_dir }}/config.json"
   changed_when: false
-  when: local_runtime in ['launchd', 'binary', 'brew']
+  when: _homebrew_check.stat.exists
 
-# Runtime-specific setup
-- name: Setup launchd service
-  ansible.builtin.include_tasks: launchd.yml
-  when: local_runtime == 'launchd'
+# Install sing-box via Homebrew
+- name: Install sing-box via Homebrew
+  community.general.homebrew:
+    name: sing-box
+    state: present
+  register: _brew_install
 
-- name: Setup Docker container
-  ansible.builtin.include_tasks: docker.yml
-  when: local_runtime == 'docker'
+# Create run script
+- name: Create run script
+  ansible.builtin.copy:
+    dest: "{{ local_run_script }}"
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      set -e
+      exec /opt/homebrew/bin/sing-box run -c "{{ local_config_dir }}/config.json"
 
-- name: Setup binary runtime
-  ansible.builtin.include_tasks: binary.yml
-  when: local_runtime == 'binary'
-
-- name: Setup Homebrew service
-  ansible.builtin.include_tasks: brew.yml
-  when: local_runtime == 'brew'
-
-# Cleanup old files
+# Cleanup
 - name: Cleanup old files
   ansible.builtin.include_tasks: cleanup.yml
-  tags: [cleanup]
 
 # Summary
 - name: Configuration summary
   ansible.builtin.debug:
     msg: |
       sing-box configured successfully.
-      
+
       Config: {{ local_config_dir }}/config.json
       PAC:    {{ local_pac_path }}
-      Mode:   {{ local_singbox_mode }}
-      IPv6:   {{ local_ipv6_enabled | default(false) }}
-      Proxy:  127.0.0.1:{{ local_proxy_http_port }}
-      
-      Enabled: {{ local_enabled_domains | join(', ') }}
-      Domains: {{ local_routing_domains | length }}
+      Proxy:  127.0.0.1:{{ local_proxy_port }}
+
+      Domains: {{ local_routing_domains | default([]) | length }}
       Servers: {{ local_singbox_servers | map(attribute='name') | join(', ') }}
+
+      Start: {{ local_run_script }}
       
-      {% if local_runtime == 'binary' %}
-      Start: {{ local_binary_run_script }}
-      {% elif local_runtime == 'brew' %}
-      Service: brew services info sing-box
-      {% elif local_runtime == 'launchd' %}
-      Service: launchctl list | grep sing-box
-      {% elif local_runtime == 'docker' %}
-      Container: docker ps | grep sing-box
-      {% endif %}
+      WiFi Settings → Proxies → Auto Proxy Configuration:
+      file://{{ local_pac_path }}
