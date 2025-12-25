@@ -5,7 +5,7 @@
 # Paths
 # ============================================================================
 
-local_config_dir: "{{ ansible_env.HOME }}/.config/sing-box"
+local_config_dir: "{{ ansible_facts['env']['HOME'] }}/.config/sing-box"
 local_pac_path: "{{ local_config_dir }}/proxy.pac"
 local_run_script: "{{ local_config_dir }}/run-sing-box.sh"
 

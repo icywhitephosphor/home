@@ -1,6 +1,6 @@
 // Ansible managed
 // PAC (Proxy Auto-Configuration) for sing-box
-// Generated: {{ ansible_date_time.iso8601 }}
+// Generated: {{ ansible_facts['date_time']['iso8601'] }}
 // Domains: {{ pac_domains | length }}
 
 function FindProxyForURL(url, host) {

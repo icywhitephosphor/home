@@ -4,7 +4,7 @@
 - name: Validate macOS
   ansible.builtin.assert:
     that:
-      - ansible_facts['os_family'] == "Darwin"
+      - ansible_facts['system'] == "Darwin"
     fail_msg: "This role only supports macOS"
 
 - name: Check Homebrew installed
@@ -90,6 +90,6 @@
       Servers: {{ local_singbox_servers | map(attribute='name') | join(', ') }}
 
       Start: {{ local_run_script }}
-      
+
       WiFi Settings → Proxies → Auto Proxy Configuration:
       file://{{ local_pac_path }}

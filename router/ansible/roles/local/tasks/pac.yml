@@ -4,7 +4,7 @@
 
 - name: Initialize PAC domains
   ansible.builtin.set_fact:
-    _pac_domains: "{{ local_routing_domains | default([]) }}"
+    pac_domains: "{{ local_routing_domains | default([]) }}"
     _pac_external_domains: []
 
 # Fetch external domain sources (optional)
@@ -16,13 +16,14 @@
         url: "{{ item }}"
         dest: "{{ local_config_dir }}/pac_external_{{ item | hash('md5') | truncate(8, True, '') }}.tmp"
         mode: "0644"
-        validate_certs: "{{ local_pac_validate_certs | default(true) }}"
+        validate_certs: "{{ local_pac_validate_certs | default(false) }}"
         timeout: 30
       loop: "{{ local_pac_extra_sources }}"
       loop_control:
         label: "{{ item | urlsplit('path') | basename }}"
       register: _pac_downloads
       failed_when: false
+      changed_when: false
 
     - name: Parse downloaded domain lists
       ansible.builtin.set_fact:
@@ -39,7 +40,7 @@
 
     - name: Merge external domains
       ansible.builtin.set_fact:
-        _pac_domains: "{{ (_pac_domains + _pac_external_domains) | unique | sort }}"
+        pac_domains: "{{ (pac_domains + _pac_external_domains) | unique | sort }}"
 
     - name: Cleanup temp files
       ansible.builtin.file:
@@ -49,17 +50,15 @@
       loop_control:
         label: "{{ item.dest | default('unknown') | basename }}"
       when: item.dest is defined
-      failed_when: false
+      changed_when: false
 
 - name: Generate PAC file
   ansible.builtin.template:
     src: proxy.pac.j2
     dest: "{{ local_pac_path }}"
     mode: "0644"
-  vars:
-    pac_domains: "{{ _pac_domains }}"
 
 - name: Report PAC generation
   ansible.builtin.debug:
-    msg: "PAC: {{ _pac_domains | length }} domains -> {{ local_pac_path }}"
+    msg: "PAC: {{ pac_domains | length }} domains -> {{ local_pac_path }}"
   when: ansible_verbosity > 0
