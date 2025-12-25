@@ -1,0 +1,55 @@
+---
+# Domain parsing tasks - Single source of truth for domain lists
+# Reads .lst files from router role and builds unified domain list
+
+- name: Build enabled domains list from config
+  ansible.builtin.set_fact:
+    local_enabled_domains: >-
+      {{
+        local_domains_lists
+        | select('in', (local_domains | dict2items | selectattr('value', 'equalto', true) | map(attribute='key') | list))
+        | reject('in', local_services_exclude | default([]))
+        | list
+      }}
+
+- name: Debug enabled domains
+  ansible.builtin.debug:
+    msg: "Enabled domain lists: {{ local_enabled_domains | join(', ') }}"
+  when: ansible_verbosity > 0
+
+- name: Initialize domains collection
+  ansible.builtin.set_fact:
+    _local_domains_raw: []
+
+- name: Read and parse IPv4 domain lists
+  ansible.builtin.set_fact:
+    _local_domains_raw: >-
+      {{
+        _local_domains_raw +
+        (lookup('file', local_domains_lists_dir + '/ipv4/' + item + '.lst', errors='ignore') | default(''))
+        | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
+      }}
+  loop: "{{ local_enabled_domains }}"
+  loop_control:
+    label: "{{ item }}.lst"
+
+- name: Read and parse IPv6 domain lists
+  ansible.builtin.set_fact:
+    _local_domains_raw: >-
+      {{
+        _local_domains_raw +
+        (lookup('file', local_domains_lists_dir + '/ipv6/' + item + '.lst', errors='ignore') | default(''))
+        | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
+      }}
+  loop: "{{ local_enabled_domains }}"
+  loop_control:
+    label: "{{ item }}.lst (IPv6)"
+  when: local_ipv6_enabled | default(false)
+
+- name: Deduplicate and sort domain list
+  ansible.builtin.set_fact:
+    local_routing_domains: "{{ _local_domains_raw | flatten | unique | sort }}"
+
+- name: Report domain count
+  ansible.builtin.debug:
+    msg: "Loaded {{ local_routing_domains | length }} unique domains from {{ local_enabled_domains | length }} lists"

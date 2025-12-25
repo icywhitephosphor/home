@@ -1,141 +1,146 @@
-# Роль Ansible `local`
+# Local Role (macOS sing-box)
 
-Настройка sing-box на macOS для селективного роутинга доменов через VPN.  
-Идеально для работы в офисе, когда нет доступа к домашнему роутеру.
+Роль для настройки sing-box на локальном Mac как SOCKS5/HTTP прокси для обхода блокировок.
+
+## Возможности
+
+- Несколько режимов запуска: `binary`, `brew`, `launchd`, `docker`
+- Proxy и TUN режимы работы
+- IPv4/IPv6 поддержка
+- PAC файл с автоматическим определением доменов
+- urltest для автовыбора лучшего VPN сервера
+- VLESS + Reality + uTLS
 
 ## Быстрый старт
 
 ```bash
-cd router/ansible
+# 1. Скопировать и заполнить секреты
+cp envs/local/group_vars/vpn_secrets.yml.example envs/local/group_vars/vpn_secrets.yml
+# Отредактировать vpn_secrets.yml - указать свои серверы
 
-# Ручной запуск (по умолчанию)
-ansible-playbook playbooks/local.yml
+# 2. Запустить плейбук
+ansible-playbook -i envs/local playbooks/local.yml
 
-# Другие режимы запуска
-ansible-playbook playbooks/local.yml -e local_runtime=brew      # brew services
-ansible-playbook playbooks/local.yml -e local_runtime=launchd   # LaunchAgent
-ansible-playbook playbooks/local.yml -e local_runtime=docker    # Docker container
+# 3. Запустить sing-box
+~/.config/sing-box/run-sing-box.sh
+
+# 4. Настроить браузер на использование прокси
+# HTTP Proxy: 127.0.0.1:2080
+# Или PAC: file://~/.config/sing-box/proxy.pac
 ```
 
-## Как это работает
+## Конфигурация
 
-```
-┌─────────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Browser/App    │────▶│   sing-box   │────▶│  VPN Server │
-│  (PAC/proxy)    │     │  :2080       │     │  (VLESS)    │
-└─────────────────┘     └──────────────┘     └─────────────┘
-        │                      │
-        │ (остальной трафик)   │ (VPN домены)
-        ▼                      ▼
-    ┌────────┐            ┌────────┐
-    │ DIRECT │            │ openai │
-    │        │            │ google │
-    └────────┘            │ claude │
-                          │  ...   │
-                          └────────┘
+### Файлы
+
+| Файл | Описание |
+|------|----------|
+| `envs/local/group_vars/localhost.yml` | Основные настройки |
+| `envs/local/group_vars/vpn_secrets.yml` | VPN серверы (секреты) |
+| `roles/local/defaults/main.yml` | Значения по умолчанию |
+
+### Переменные
+
+```yaml
+# Runtime: binary | brew | launchd | docker
+local_runtime: binary
+
+# Режим: proxy (рекомендуется) | tun
+local_singbox_mode: proxy
+
+# IPv6 support
+local_ipv6_enabled: true
+
+# Порт прокси
+local_proxy_http_port: 2080
+
+# Включение доменов
+local_domains:
+  openai: true
+  claude: true
+  google: true
+  # ... и т.д.
+
+# Внешние источники доменов для PAC
+local_pac_extra_sources:
+  - "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-ipset.lst"
 ```
 
-1. Генерирует конфиг в `~/.config/sing-box/`
-2. Поднимает HTTP/SOCKS5 прокси на `127.0.0.1:2080`
-3. Создаёт PAC файл для автоматической маршрутизации
-4. Домены из списков идут через VPN, остальное — напрямую
+### VPN серверы (vpn_secrets.yml)
+
+```yaml
+local_singbox_servers:
+  - name: amsterdam
+    server: "1.2.3.4"
+    server_ipv6: "2001:db8::1"
+    uuid: "your-uuid"
+    short_id: "abc123"
+    public_key: "your-public-key"
+
+local_singbox_outbound_common:
+  tag: vpn-out
+  type: vless
+  server_port: 8443
+  flow: xtls-rprx-vision
+  tls:
+    enabled: true
+    server_name: "example.com"
+  utls:
+    enabled: true
+    fingerprint: chrome
+  reality:
+    enabled: true
+```
 
 ## Режимы запуска
 
-| Режим | Описание |
-|-------|----------|
-| `binary` | Установка sing-box + скрипт для ручного запуска |
-| `brew` | Управление через `brew services` |
-| `launchd` | macOS LaunchAgent (автозапуск) |
-| `docker` | Контейнер (только proxy mode) |
+| Режим | Описание | Автозапуск |
+|-------|----------|------------|
+| `binary` | Ручной запуск через скрипт | Нет |
+| `brew` | `brew services` | Да |
+| `launchd` | macOS LaunchAgent | Да |
+| `docker` | Docker контейнер | Да |
 
-## Настройка браузера
+## Списки доменов
 
-### Вариант 1: PAC файл (рекомендуется)
-```
-System Settings → Network → Wi-Fi → Details → Proxies
-→ Automatic Proxy Configuration
-→ URL: file:///Users/<username>/.config/sing-box/proxy.pac
-```
+Используются `.lst` файлы из роли `router` (`roles/router/files/ipv4/*.lst`).
 
-### Вариант 2: Ручной прокси
-```
-System Settings → Network → Wi-Fi → Details → Proxies
-→ Web Proxy (HTTP): 127.0.0.1:2080
-→ Secure Web Proxy (HTTPS): 127.0.0.1:2080
-```
+Доступные списки:
+- `antigravity` - Google AI Studio, Gemini
+- `claude` - Anthropic Claude
+- `copilot` - GitHub Copilot
+- `datadog` - Datadog monitoring
+- `google` - Google services
+- `instagram` - Instagram
+- `linkedin` - LinkedIn
+- `netflix` - Netflix
+- `openai` - OpenAI, ChatGPT
+- `telegram` - Telegram
+- `windsurf` - Windsurf IDE
+- `x` - X (Twitter)
 
-### Вариант 3: Только браузер
-- **Firefox**: Settings → Network Settings → Manual proxy → HTTP: 127.0.0.1:2080
-- **Chrome**: используйте расширение Proxy SwitchyOmega
-
-## Управление
+## Tags
 
 ```bash
-# binary режим
-~/.config/sing-box/run-sing-box.sh
+# Только PAC файл
+ansible-playbook -i envs/local playbooks/local.yml --tags pac
 
-# brew режим
-brew services info sing-box
-brew services restart sing-box
+# Только sing-box конфиг
+ansible-playbook -i envs/local playbooks/local.yml --tags config
 
-# launchd режим
-launchctl list | grep sing-box
-launchctl kickstart -k gui/$(id -u)/com.sing-box
-
-# docker режим
-docker ps | grep sing-box
-docker logs -f sing-box
-
-# Логи
-tail -f ~/Library/Logs/sing-box.log
+# Очистка старых файлов
+ansible-playbook -i envs/local playbooks/local.yml --tags cleanup
 ```
 
-## Переменные
+## Troubleshooting
 
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| `local_runtime` | Режим запуска | `binary` |
-| `local_singbox_mode` | `proxy` или `tun` | `proxy` |
-| `local_proxy_http_port` | Порт прокси | `2080` |
-| `local_enabled_domains` | Список доменов | см. defaults |
-| `local_singbox_outbound` | Настройки VPN | см. group_vars |
+```bash
+# Проверить конфиг
+sing-box check -c ~/.config/sing-box/config.json
 
-## Добавление доменов
+# Запустить с debug
+sing-box run -c ~/.config/sing-box/config.json
 
-Домены берутся из `roles/router/files/ipv4/*.lst`. Чтобы включить/выключить:
-
-```yaml
-# defaults/main.yml или group_vars
-local_enabled_domains:
-  - openai
-  - google
-  - claude
-  # - telegram  # закомментировать для отключения
-```
-
-## Совместимость с рабочим VPN
-
-В режиме `proxy` роль **не конфликтует** с рабочим VPN:
-- Рабочий VPN обрабатывает весь трафик как обычно
-- Приложения с настроенным прокси → sing-box → личный VPN
-- Остальные приложения → рабочий VPN / напрямую
-
-## Структура
-
-```
-roles/local/
-├── defaults/main.yml      # Переменные по умолчанию
-├── handlers/main.yml      # Хендлеры для перезапуска
-├── tasks/
-│   ├── main.yml          # Основная логика
-│   ├── pac.yml           # Генерация PAC файла
-│   ├── binary.yml        # Ручной запуск
-│   ├── brew.yml          # brew services
-│   ├── launchd.yml       # LaunchAgent
-│   └── docker.yml        # Docker container
-└── templates/
-    ├── config.json.j2    # Конфиг sing-box
-    ├── proxy.pac.j2      # PAC файл
-    └── com.sing-box.plist.j2
+# Проверить прокси
+curl -x http://127.0.0.1:2080 https://api.openai.com/v1/models
 ```

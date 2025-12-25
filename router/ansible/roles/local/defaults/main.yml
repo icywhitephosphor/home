@@ -15,6 +15,9 @@ local_runtime: binary
 # Режим работы: proxy (рекомендуется) или tun
 local_singbox_mode: proxy
 
+# IPv6 support (включает парсинг IPv6 списков)
+local_ipv6_enabled: false
+
 # ============================================================================
 # Network Configuration
 # ============================================================================
@@ -32,63 +35,56 @@ local_brew_config_path: "/opt/homebrew/etc/sing-box/config.json"
 local_binary_run_script: "{{ local_config_dir }}/run-sing-box.sh"
 local_pac_path: "{{ local_config_dir }}/proxy.pac"
 
-# Log path (varies by runtime)
-local_log_file: >-
-  {{
-    (local_runtime == 'docker') | ternary('/config/sing-box.log',
-    (local_runtime == 'brew') | ternary('/opt/homebrew/var/log/sing-box.log',
-    ansible_env.HOME + '/Library/Logs/sing-box.log'))
-  }}
-
 # ============================================================================
 # Domain Lists (synchronized with router role)
 # ============================================================================
 
 # Список всех доступных доменов (должен совпадать с router_domains_lists)
 local_domains_lists:
-  - copilot
-  - openai
-  - google
-  - datadog
-  - instagram
-  - netflix
-  - telegram
-  - claude
-  - x
-  - linkedin
-  - windsurf
   - antigravity
+  - claude
+  - copilot
+  - datadog
+  - google
+  - instagram
+  - linkedin
+  - netflix
+  - openai
+  - telegram
+  - windsurf
+  - x
 
-# Включение/выключение доменов (аналогично router_domains)
+# Services to exclude from VPN routing (patterns matched in downloaded list)
+local_services_exclude: []
+
+# Включение/выключение доменов (по умолчанию все выключены - включать в group_vars)
 local_domains:
-  copilot: true
-  openai: true
-  google: true
-  datadog: true
-  instagram: true
-  netflix: true
+  antigravity: false
+  claude: false
+  copilot: false
+  datadog: false
+  google: false
+  instagram: false
+  linkedin: false
+  netflix: false
+  openai: false
   telegram: false
-  claude: true
-  x: true
-  linkedin: true
-  windsurf: true
-  antigravity: true
+  windsurf: false
+  x: false
+
+# Директория с доменными списками из роли router
+local_domains_lists_dir: "{{ playbook_dir }}/../roles/router/files"
 
 # ============================================================================
 # PAC File Configuration
 # ============================================================================
 
 local_pac_enabled: true
-local_pac_validate_certs: true
+local_pac_validate_certs: false
 
 # Внешние источники доменов (ipset/nftset формат)
 local_pac_extra_sources:
   - "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-ipset.lst"
-
-# Services to exclude from PAC (patterns in downloaded list)
-local_services_exclude:
-  - kinovod
-  - telegram
 
 # ============================================================================
 # sing-box Configuration
@@ -97,7 +93,7 @@ local_services_exclude:
 # Log level: trace, debug, info, warn, error, fatal, panic
 local_singbox_log_level: info
 
-# DNS servers for sing-box (routed through VPN)
+# DNS servers for sing-box
 local_singbox_dns_servers:
   - tag: bootstrap
     type: udp
@@ -124,32 +120,31 @@ local_singbox_tun:
   stack: system
 
 # ============================================================================
-# VLESS Outbound
+# VLESS Outbound Configuration
 # ============================================================================
 
-# ВАЖНО: server, uuid, tls.server_name должны быть заданы в group_vars!
-local_singbox_outbound:
+# Список VPN серверов (ОБЯЗАТЕЛЬНО в group_vars)
+local_singbox_servers: []
+
+# Общие настройки для всех серверов (переопределять в group_vars)
+local_singbox_outbound_common:
   tag: vpn-out
   type: vless
-  server: ""           # REQUIRED in group_vars
-  server_port: 8443
-  uuid: ""             # REQUIRED in group_vars
-  flow: xtls-rprx-vision  # Optional, can be empty string to disable
+  server_port: 443
+  flow: xtls-rprx-vision
 
   tls:
     enabled: true
     insecure: false
-    server_name: ""    # REQUIRED in group_vars
+    server_name: ""
     disable_sni: false
 
   utls:
     enabled: true
-    fingerprint: random
+    fingerprint: chrome
 
   reality:
     enabled: false
-    public_key: ""
-    short_id: ""
 
 # ============================================================================
 # Docker Configuration (for local_runtime: docker)

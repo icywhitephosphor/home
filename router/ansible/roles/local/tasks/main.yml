@@ -13,8 +13,17 @@
       - local_runtime in ['launchd', 'docker', 'brew', 'binary']
       - local_runtime != 'docker' or local_singbox_mode == 'proxy'
     fail_msg: >-
-      Invalid runtime. Use: launchd, docker, brew, or binary.
+      Invalid runtime '{{ local_runtime }}'. Use: launchd, docker, brew, or binary.
       Docker runtime supports only proxy mode.
+
+- name: Validate VPN secrets
+  ansible.builtin.assert:
+    that:
+      - local_singbox_servers | length > 0
+      - local_singbox_outbound_common.tls.server_name | length > 0
+    fail_msg: >-
+      VPN secrets missing. Copy and fill:
+      cp envs/local/group_vars/vpn_secrets.yml.example envs/local/group_vars/vpn_secrets.yml
 
 - name: Create config directory
   ansible.builtin.file:
@@ -22,55 +31,23 @@
     state: directory
     mode: "0755"
 
-# Build enabled domains list from local_domains dict
-- name: Build enabled domains list
-  ansible.builtin.set_fact:
-    local_enabled_domains: >-
-      {{
-        local_domains_lists
-        | select('in', (local_domains | dict2items | selectattr('value', 'equalto', true) | map(attribute='key') | list))
-        | reject('in', local_services_exclude | default([]))
-        | list
-      }}
+# Parse domain lists from router role files
+- name: Parse domain lists
+  ansible.builtin.include_tasks: domains.yml
 
-- name: Debug enabled domains
-  ansible.builtin.debug:
-    var: local_enabled_domains
-  when: ansible_verbosity > 0
-
-# Build domain list from .lst files in roles/router/files/ipv4/
-- name: Initialize domains parsed list
-  ansible.builtin.set_fact:
-    local_domains_parsed: []
-
-- name: Parse enabled domain lists
-  ansible.builtin.set_fact:
-    local_domains_parsed: >-
-      {{
-        local_domains_parsed +
-        (lookup('file', playbook_dir + '/../roles/router/files/ipv4/' + item + '.lst', errors='ignore') | default(''))
-        | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
-      }}
-  loop: "{{ local_enabled_domains }}"
-
-- name: Deduplicate domain list
-  ansible.builtin.set_fact:
-    local_routing_domains: "{{ local_domains_parsed | flatten | unique | sort }}"
-
-- name: Debug routing domains count
-  ansible.builtin.debug:
-    msg: "Found {{ local_routing_domains | length }} unique domains"
-  when: ansible_verbosity > 0
-
+# Generate PAC file
 - name: Generate PAC file
-  when: local_pac_enabled | default(true)
   ansible.builtin.include_tasks: pac.yml
+  when: local_pac_enabled | default(true)
 
+# Generate sing-box configuration
 - name: Generate sing-box configuration
   ansible.builtin.template:
     src: config.json.j2
     dest: "{{ local_config_dir }}/config.json"
     mode: "0600"
+    backup: true
+  register: _local_config_changed
   notify: "{{ _notify_handlers }}"
   vars:
     _notify_handlers: >-
@@ -86,40 +63,48 @@
   ansible.builtin.command:
     cmd: sing-box check -c {{ local_config_dir }}/config.json
   changed_when: false
-  when: local_runtime in ['launchd', 'binary']
+  when: local_runtime in ['launchd', 'binary', 'brew']
 
-# Runtime-specific tasks
+# Runtime-specific setup
 - name: Setup launchd service
-  when: local_runtime == 'launchd'
   ansible.builtin.include_tasks: launchd.yml
+  when: local_runtime == 'launchd'
 
 - name: Setup Docker container
-  when: local_runtime == 'docker'
   ansible.builtin.include_tasks: docker.yml
+  when: local_runtime == 'docker'
 
 - name: Setup binary runtime
-  when: local_runtime == 'binary'
   ansible.builtin.include_tasks: binary.yml
+  when: local_runtime == 'binary'
 
 - name: Setup Homebrew service
-  when: local_runtime == 'brew'
   ansible.builtin.include_tasks: brew.yml
+  when: local_runtime == 'brew'
 
-- name: Display post-install info
+# Cleanup old files
+- name: Cleanup old files
+  ansible.builtin.include_tasks: cleanup.yml
+  tags: [cleanup]
+
+# Summary
+- name: Configuration summary
   ansible.builtin.debug:
     msg: |
-      ✅ sing-box configured successfully!
+      sing-box configured successfully.
       
       Config: {{ local_config_dir }}/config.json
       PAC:    {{ local_pac_path }}
       Mode:   {{ local_singbox_mode }}
+      IPv6:   {{ local_ipv6_enabled | default(false) }}
       Proxy:  127.0.0.1:{{ local_proxy_http_port }}
       
-      Enabled domains: {{ local_enabled_domains | join(', ') }}
-      Total unique domains: {{ local_routing_domains | length }}
+      Enabled: {{ local_enabled_domains | join(', ') }}
+      Domains: {{ local_routing_domains | length }}
+      Servers: {{ local_singbox_servers | map(attribute='name') | join(', ') }}
       
       {% if local_runtime == 'binary' %}
-      To start manually: {{ local_binary_run_script }}
+      Start: {{ local_binary_run_script }}
       {% elif local_runtime == 'brew' %}
       Service: brew services info sing-box
       {% elif local_runtime == 'launchd' %}
@@ -127,7 +112,3 @@
       {% elif local_runtime == 'docker' %}
       Container: docker ps | grep sing-box
       {% endif %}
-      
-      Configure your browser/system to use:
-      - HTTP Proxy: 127.0.0.1:{{ local_proxy_http_port }}
-      - Or PAC file: file://{{ local_pac_path }}

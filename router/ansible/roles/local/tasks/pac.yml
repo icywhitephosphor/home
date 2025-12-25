@@ -1,47 +1,65 @@
 ---
 # PAC file generation
+# Uses local_routing_domains from domains.yml + optional external sources
 
-# Fetch external domain sources
+- name: Initialize PAC domains
+  ansible.builtin.set_fact:
+    _pac_domains: "{{ local_routing_domains | default([]) }}"
+    _pac_external_domains: []
+
+# Fetch external domain sources (optional)
 - name: Fetch external domain sources
-  ansible.builtin.get_url:
-    url: "{{ item }}"
-    dest: "{{ local_config_dir }}/.pac_cache_{{ item | hash('md5') }}"
-    mode: "0644"
-    validate_certs: "{{ local_pac_validate_certs }}"
-  register: _pac_fetch
-  changed_when: false
-  failed_when: false
-  loop: "{{ local_pac_extra_sources | default([]) }}"
+  when: local_pac_extra_sources | default([]) | length > 0
+  block:
+    - name: Download external domain lists
+      ansible.builtin.get_url:
+        url: "{{ item }}"
+        dest: "{{ local_config_dir }}/pac_external_{{ item | hash('md5') | truncate(8, True, '') }}.tmp"
+        mode: "0644"
+        validate_certs: "{{ local_pac_validate_certs | default(true) }}"
+        timeout: 30
+      loop: "{{ local_pac_extra_sources }}"
+      loop_control:
+        label: "{{ item | urlsplit('path') | basename }}"
+      register: _pac_downloads
+      failed_when: false
 
-# Parse external sources
-- name: Parse external domain sources
-  ansible.builtin.set_fact:
-    local_pac_domains_external: >-
-      {{
-        local_pac_domains_external | default([]) +
-        (lookup('file', item.dest, errors='ignore') | default(''))
-        | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/')
-      }}
-  loop: "{{ _pac_fetch.results | default([]) }}"
-  when:
-    - item.dest is defined
-    - item.failed | default(false) | bool == false
+    - name: Parse downloaded domain lists
+      ansible.builtin.set_fact:
+        _pac_external_domains: >-
+          {{
+            _pac_external_domains +
+            (lookup('file', item.dest, errors='ignore') | default(''))
+            | regex_findall('(?:ipset|nftset)=/\.?([^/]+)/[^/\n]*')
+          }}
+      loop: "{{ _pac_downloads.results | selectattr('dest', 'defined') | list }}"
+      loop_control:
+        label: "{{ item.dest | default('unknown') | basename }}"
+      when: item.dest is defined and item.failed is not defined or not item.failed
 
-# Merge all domains for PAC
-- name: Build final PAC domain list
-  ansible.builtin.set_fact:
-    local_pac_domains: >-
-      {{
-        (
-          (local_routing_domains | default([])) +
-          (local_pac_domains_external | default([]))
-        ) | unique | sort
-      }}
+    - name: Merge external domains
+      ansible.builtin.set_fact:
+        _pac_domains: "{{ (_pac_domains + _pac_external_domains) | unique | sort }}"
 
-- name: Render PAC file
+    - name: Cleanup temp files
+      ansible.builtin.file:
+        path: "{{ item.dest }}"
+        state: absent
+      loop: "{{ _pac_downloads.results | selectattr('dest', 'defined') | list }}"
+      loop_control:
+        label: "{{ item.dest | default('unknown') | basename }}"
+      when: item.dest is defined
+      failed_when: false
+
+- name: Generate PAC file
   ansible.builtin.template:
     src: proxy.pac.j2
     dest: "{{ local_pac_path }}"
     mode: "0644"
   vars:
-    pac_domains: "{{ local_pac_domains }}"
+    pac_domains: "{{ _pac_domains }}"
+
+- name: Report PAC generation
+  ansible.builtin.debug:
+    msg: "PAC: {{ _pac_domains | length }} domains -> {{ local_pac_path }}"
+  when: ansible_verbosity > 0

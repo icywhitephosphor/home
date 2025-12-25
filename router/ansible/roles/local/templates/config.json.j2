@@ -1,7 +1,7 @@
+{# {{ ansible_managed }} #}
 {
   "log": {
     "level": "{{ local_singbox_log_level }}",
-    "output": "{{ local_log_file }}",
     "timestamp": true
   },
   "dns": {
@@ -9,24 +9,21 @@
 {% for dns in local_singbox_dns_servers %}
       {
         "tag": "{{ dns.tag }}",
-        "type": "{{ dns.type }}"{% if dns.server is defined %},
-        "server": "{{ dns.server }}"{% endif %}{% if dns.server_port is defined %},
-        "server_port": {{ dns.server_port }}{% endif %}{% if dns.domain_resolver is defined %},
-        "domain_resolver": "{{ dns.domain_resolver }}"{% endif %}
-
+{% if dns.type == 'udp' %}
+        "type": "udp",
+        "server": "{{ dns.server }}"
+{% elif dns.type == 'https' %}
+        "type": "https",
+        "server": "{{ dns.server }}",
+        "server_port": {{ dns.server_port | default(443) }},
+        "domain_resolver": "{{ dns.domain_resolver }}"
+{% endif %}
       }{% if not loop.last %},{% endif %}
 
 {% endfor %}
     ],
-    "rules": [
-{% if local_routing_domains | default([]) | length > 0 %}
-      {
-        "domain_suffix": {{ local_routing_domains | to_json }},
-        "server": "{{ local_singbox_dns_servers[1].tag }}"
-      }
-{% endif %}
-    ],
-    "final": "{{ (local_singbox_dns_servers | last).tag }}"
+    "strategy": "{% if local_ipv6_enabled | default(false) %}prefer_ipv4{% else %}ipv4_only{% endif %}",
+    "final": "{{ local_singbox_dns_servers[1].tag }}"
   },
   "inbounds": [
 {% if local_singbox_mode == 'proxy' %}
@@ -55,53 +52,74 @@
   ],
   "outbounds": [
     {
-      "tag": "{{ local_singbox_outbound.tag }}",
-      "type": "{{ local_singbox_outbound.type }}",
-      "server": "{{ local_singbox_outbound.server }}",
-      "server_port": {{ local_singbox_outbound.server_port }},
-      "uuid": "{{ local_singbox_outbound.uuid }}"{% if local_singbox_outbound.flow %},
-      "flow": "{{ local_singbox_outbound.flow }}"{% endif %},
-      "tls": {
-        "enabled": {{ local_singbox_outbound.tls.enabled | lower }},
-        "insecure": {{ local_singbox_outbound.tls.insecure | lower }},
-        "server_name": "{{ local_singbox_outbound.tls.server_name }}",
-        "disable_sni": {{ local_singbox_outbound.tls.disable_sni | lower }},
-        "utls": {
-          "enabled": {{ local_singbox_outbound.utls.enabled | lower }},
-          "fingerprint": "{{ local_singbox_outbound.utls.fingerprint }}"
-        }{% if local_singbox_outbound.reality.enabled %},
-        "reality": {
-          "enabled": true,
-          "public_key": "{{ local_singbox_outbound.reality.public_key }}",
-          "short_id": "{{ local_singbox_outbound.reality.short_id }}"
-        }{% endif %}
+      "tag": "{{ local_singbox_outbound_common.tag }}",
+      "type": "urltest",
+      "outbounds": [
+{% for server in local_singbox_servers %}
+        "{{ server.name }}-v4"{% if (local_ipv6_enabled | default(false)) and server.server_ipv6 | default('') | length > 0 %},
+        "{{ server.name }}-v6"{% endif %}{% if not loop.last %},{% endif %}
 
-      }
+{% endfor %}
+      ],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "5m",
+      "tolerance": 50
     },
+{% for server in local_singbox_servers %}
     {
-      "tag": "direct",
-      "type": "direct"
-    }
+      "tag": "{{ server.name }}-v4",
+      "type": "{{ local_singbox_outbound_common.type }}",
+      "server": "{{ server.server }}",
+      "server_port": {{ local_singbox_outbound_common.server_port }},
+      "uuid": "{{ server.uuid }}"{% if local_singbox_outbound_common.flow %},
+      "flow": "{{ local_singbox_outbound_common.flow }}"{% endif %},
+      "tls": {
+        "enabled": {{ local_singbox_outbound_common.tls.enabled | lower }},
+        "insecure": {{ local_singbox_outbound_common.tls.insecure | lower }},
+        "server_name": "{{ local_singbox_outbound_common.tls.server_name }}",
+        "disable_sni": {{ local_singbox_outbound_common.tls.disable_sni | lower }},
+        "utls": {
+          "enabled": {{ local_singbox_outbound_common.utls.enabled | lower }},
+          "fingerprint": "{{ local_singbox_outbound_common.utls.fingerprint }}"
+        },
+        "reality": {
+          "enabled": {{ local_singbox_outbound_common.reality.enabled | lower }}{% if local_singbox_outbound_common.reality.enabled %},
+          "public_key": "{{ server.public_key }}",
+          "short_id": "{{ server.short_id }}"{% endif %}
+
+        }
+      }
+    }{% if (local_ipv6_enabled | default(false)) and server.server_ipv6 | default('') | length > 0 %},
+    {
+      "tag": "{{ server.name }}-v6",
+      "type": "{{ local_singbox_outbound_common.type }}",
+      "server": "{{ server.server_ipv6 }}",
+      "server_port": {{ local_singbox_outbound_common.server_port }},
+      "uuid": "{{ server.uuid }}"{% if local_singbox_outbound_common.flow %},
+      "flow": "{{ local_singbox_outbound_common.flow }}"{% endif %},
+      "tls": {
+        "enabled": {{ local_singbox_outbound_common.tls.enabled | lower }},
+        "insecure": {{ local_singbox_outbound_common.tls.insecure | lower }},
+        "server_name": "{{ local_singbox_outbound_common.tls.server_name }}",
+        "disable_sni": {{ local_singbox_outbound_common.tls.disable_sni | lower }},
+        "utls": {
+          "enabled": {{ local_singbox_outbound_common.utls.enabled | lower }},
+          "fingerprint": "{{ local_singbox_outbound_common.utls.fingerprint }}"
+        },
+        "reality": {
+          "enabled": {{ local_singbox_outbound_common.reality.enabled | lower }}{% if local_singbox_outbound_common.reality.enabled %},
+          "public_key": "{{ server.public_key }}",
+          "short_id": "{{ server.short_id }}"{% endif %}
+
+        }
+      }
+    }{% endif %}{% if not loop.last %},{% endif %}
+
+{% endfor %}
   ],
   "route": {
     "default_domain_resolver": "{{ local_singbox_dns_servers[1].tag }}",
-    "rules": [
-      {
-        "protocol": "dns",
-        "action": "hijack-dns"
-      },
-{% if local_routing_domains | default([]) | length > 0 %}
-      {
-        "domain_suffix": {{ local_routing_domains | to_json }},
-        "outbound": "{{ local_singbox_outbound.tag }}"
-      },
-{% endif %}
-      {
-        "ip_is_private": true,
-        "outbound": "direct"
-      }
-    ],
-    "final": "direct",
+    "final": "{{ local_singbox_outbound_common.tag }}",
     "auto_detect_interface": true
   }
 }

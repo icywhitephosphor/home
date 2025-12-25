@@ -1,0 +1,27 @@
+---
+# Cleanup tasks for local role
+
+- name: Find old config files
+  ansible.builtin.find:
+    paths: "{{ local_config_dir }}"
+    patterns:
+      - "*.bak"
+      - "*.old"
+      - "config.json.*"
+    age: "7d"
+  register: _local_old_configs
+
+- name: Remove old config backups
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ _local_old_configs.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: _local_old_configs.files | length > 0
+
+- name: Remove stale PAC temp files
+  ansible.builtin.file:
+    path: "{{ local_config_dir }}/pac_domains_*.tmp"
+    state: absent
+  failed_when: false
